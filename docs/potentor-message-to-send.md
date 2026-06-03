@@ -59,13 +59,46 @@ El endpoint `/diagnostico/lista_ip` está mal etiquetado en su OpenAPI spec como
 
 ---
 
-## 3. Aclaración sobre Evaluación 360
+## 3. Endpoint para Evaluación 360 — la data existe en su UI pero no en el API
 
-Estamos usando `/desempeno/working_process_by_date?sucursal_id=X&year=Y` para el módulo de Evaluación 360. Es el único endpoint en su spec con parámetro `year`, lo que lo hace match natural para comparativo 2025 vs 2026.
+Identificamos que en su plataforma la Evaluación 360 vive en:
+`https://campus.potentor.com.mx/procesos_360/grupos_asignados`
 
-**Pregunta:** ¿este endpoint efectivamente trae las Evaluaciones 360, o trae **todos** los procesos de desempeño (incluyendo evaluación de desempeño normal, 9-box, etc.)?
+Sin embargo, probamos todas las variantes razonables en el API REST y **ninguna existe**:
 
-Si trae todos, ¿cómo distinguimos cuáles son 360 vs los otros tipos? ¿Hay un campo `tipo` o `categoria` en la respuesta? ¿O un endpoint específico para 360?
+| URL probada | Resultado |
+|---|---|
+| `GET /api_rest/procesos_360/grupos_asignados` | 404 |
+| `GET /api_rest/procesos_360/lista` | 404 |
+| `GET /api_rest/procesos_360/resultados` | 404 |
+| `GET /api_rest/procesos_360` | 404 |
+| `GET /api_rest/procesos_360/info` | 404 |
+
+(verificado con la API key sandbox)
+
+Entendemos que la data de 360 está disponible en su sistema (la UI funciona), pero no hay un endpoint REST para consumirla.
+
+**Necesitamos UNA de estas tres opciones, en orden de preferencia:**
+
+### Opción A — Exponer endpoints REST para 360 (preferida)
+
+Que expongan endpoints equivalentes a las pantallas de `/procesos_360/*`:
+
+- `GET /procesos_360/grupos_asignados?sucursal_id=X&year=Y` — listado de grupos/procesos
+- `GET /procesos_360/resultados/{proceso_id}` — resultados agregados (score por competencia, n respuestas)
+- `GET /procesos_360/ciclos?year=Y` — ciclos por año
+
+### Opción B — Confirmar que `/desempeno/working_process_by_date` cubre 360
+
+¿El endpoint existente `/desempeno/working_process_by_date?sucursal_id=X&year=Y` incluye los procesos de 360? Si sí, ¿cómo distinguimos cuáles son 360 vs evaluación de desempeño normal vs 9-box? ¿Hay un campo `tipo` en la respuesta?
+
+### Opción C — Export programado o webhook
+
+Si exponer endpoints toma tiempo, podemos arrancar con:
+- **CSV/JSON de los resultados agregados** dejado en SFTP/Drive nuestro cada vez que se cierre un ciclo de 360
+- **Webhook al cierre** de un proceso que nos empuje los resultados
+
+Cualquiera de estas tres nos destraba para el comparativo 2025 vs 2026.
 
 ---
 
