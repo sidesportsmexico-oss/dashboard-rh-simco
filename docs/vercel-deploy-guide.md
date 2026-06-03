@@ -51,11 +51,22 @@ Reemplaza los valores de:
 - `POTENTOR_DEFAULT_SUCURSAL` → ID de la sucursal principal de SIMCO
 - `POTENTOR_POTENTOR_ID` → ID de SIMCO (o de sucursal, según contexto del endpoint)
 
-> **MUY IMPORTANTE**: marca `POTENTOR_API_KEY` con el checkbox **Sensitive / Encrypted** para que ni siquiera tú puedas verla después en la UI. Vercel la encripta en reposo.
+> **MUY IMPORTANTE**: en `POTENTOR_API_KEY` activa el **toggle del candado** (Sensitive/Encrypted) — el icono a la derecha del campo Value. Eso encripta la key en reposo y nadie podrá verla después, ni siquiera con permiso de admin (solo Vercel runtime la decripta para tu app).
 
-### Para los tres entornos (Production, Preview, Development):
+Para las otras vars (BASE_URL, SUCURSAL, POTENTOR_ID, CACHE_TTL) el candado es opcional — no son secretos.
 
-Vercel pide elegir en cuáles entornos aplica cada variable. **Marca las 3 casillas** (Production, Preview, Development) para todas las vars de Potentor.
+### Elegir el environment (dropdown único, no checkboxes)
+
+Vercel pide elegir en qué environment aplica cada variable mediante un **dropdown único**, no checkboxes. Las opciones son:
+
+| Opción | Cuándo aplica | ¿La elegimos? |
+|---|---|---|
+| ✅ **Production and Preview** | Deploy real + preview deploys de PRs | **Sí, déjala así (es la default)** |
+| Production | Solo el deploy de producción | No |
+| Preview | Solo previews de PRs | No |
+| Development | Solo cuando usas el CLI `vercel dev` localmente | No — tu local usa `.env.local` |
+
+**Para nuestras 5 variables: déjalas en "Production and Preview".** No necesitas tocarlo.
 
 ## 5. Deploy
 
