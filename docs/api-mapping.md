@@ -80,24 +80,25 @@
 - ⚠️ Los campos `total` y `enviados` del wrapper devuelven "0" en sandbox (inservibles); computamos nosotros: total = data.length, respondieron = data.filter(ip > 0).length
 - ⚠️ Escala de `ip`: aparenta ser 0-100 pero no documentada. Pendiente confirmar con Potentor.
 
-### ⚠️ 3. Evaluación 360 — **NO HAY ENDPOINT LLAMADO "360", PERO HAY UN CANDIDATO FUERTE**
+### ⚠️ 3. Evaluación 360 — **DATA EXISTE EN UI, NO EN API**
 
-**Hallazgo (2026-06-02):** búsqueda por "360" en la spec → **0 hits**. Búsqueda por "evaluación" → solo aparece en endpoints `/empleado/ncp_detallado` y descripciones genéricas.
+**Hallazgo crítico (2026-06-02, confirmado por SIMCO):** El módulo 360 vive en la UI de Potentor en `https://campus.potentor.com.mx/procesos_360/grupos_asignados`, pero NO hay endpoints REST equivalentes:
 
-**Sin embargo, encontramos un endpoint con la forma correcta:**
+| Probado en API | Resultado |
+|---|---|
+| `/api_rest/procesos_360/grupos_asignados` | 404 |
+| `/api_rest/procesos_360/lista`, `/resultados`, `/info` | 404 |
+| Toda variante razonable de `/procesos_360/*` | 404 |
 
-✅ `GET /desempeno/working_process_by_date?sucursal_id=X&year=Y`
-- Es el ÚNICO endpoint en toda la spec con parámetro `year` — exactamente lo que necesitamos para comparativo 2025 vs 2026.
-- Devuelve "procesos de desempeño en el mes indicado, con los colaboradores y sus indicadores".
-- Sandbox responde "No se encontraron procesos" porque no hay data demo cargada, pero la forma encaja.
+**Implementación actual provisional:** Usamos `/desempeno/working_process_by_date?sucursal_id=X&year=Y` (único endpoint con parámetro `year` en la spec) como placeholder. Puede o no traer la data de 360 — pendiente confirmar con Potentor.
 
-**Implementación actual:** el módulo `/evaluacion-360` ya está armado contra este endpoint. Se llena cuando haya prod data.
+**Acciones requeridas con Potentor (en orden de preferencia):**
+1. (Preferido) Exponer endpoints REST equivalentes a `/procesos_360/*` UI
+2. (Aceptable) Confirmar si `/desempeno/working_process_by_date` trae 360, y si trae todos los procesos, cómo distinguir (campo `tipo`?)
+3. (Plan B) Export programado o webhook con resultados agregados al cerrar ciclo
 
-**Acción requerida:** preguntar a Potentor:
-> "El endpoint /desempeno/working_process_by_date tiene parámetro `year`. ¿Es ahí donde viven las Evaluaciones 360? ¿O 360 es un tipo específico de proceso de desempeño? ¿Hay forma de filtrar solo 360 vs evaluación de desempeño normal vs 9-box?"
-
-**Endpoints secundarios:**
-- `GET /empleado/ncp_detallado` — evaluaciones de nivel del empleado (per-employee, sandbox restricted)
+**Endpoints secundarios (sandbox los rechaza):**
+- `GET /empleado/ncp_detallado` — evaluaciones de nivel del empleado
 - `GET /nine_box/potencial_desemp` — matriz 9-box
 - `GET /empleado/calificar` — calificación por evento
 
