@@ -4,146 +4,110 @@ Copia desde la siguiente línea hacia abajo y envíalo por correo al contacto t�
 
 ---
 
-**Asunto:** Solicitud de API key de producción y aclaraciones técnicas — Dashboard RH SIMCO
+**Asunto:** Solicitud técnica — endpoints faltantes para dashboard ejecutivo de SIMCO
 
 Hola equipo Potentor,
 
-Les escribo del equipo de integración del Dashboard de RH para el CEO de SIMCO. Ya tenemos la integración funcionando contra su sandbox y necesitamos cerrar dos puntos para pasar a piloto con el CEO. Son 3 solicitudes concretas:
+Estoy avanzando con el dashboard ejecutivo para el CEO de SIMCO. Tengo **Reclutamiento, Head Count e Índice de Potencial funcionando contra producción**. Para cerrar las 3 visualizaciones que aún faltan al CEO necesito su ayuda con lo siguiente.
 
 ---
 
-## 1. API Key de producción para SIMCO
+## 1️⃣ Resultados de las encuestas ECO (Clima Organizacional)
 
-Necesitamos:
+**Lo que el CEO necesita ver:** los resultados de las 3 encuestas ECO que SIMCO tiene registradas en su plataforma (`/diagnostico_clima_organizacional`):
 
-- **API Key de producción** para la cuenta de SIMCO
-- **`potentor_id`** de SIMCO (el ID de la empresa)
-- **`sucursal_id`** de cada sucursal (restaurantes + corporativo) — la lista completa
+| Título | Tipo | Participantes | Periodo de aplicación | Estatus |
+|---|---|---|---|---|
+| ECO 2025 SIMCo | Privada | 47 | 01 - 12 Sep 2025 | TERMINADO |
+| ECO 2025 CONCEPTS | Pública | 52 | 01 - 08 Sep 2025 | TERMINADO |
+| ECO 2024 (2) | Privada | 91 | 01 - 04 Nov 2024 | TERMINADO |
 
-**Confirmar que la key tiene permisos para estos 12 endpoints** (sandbox da 403 en algunos, queremos que producción no):
+**Problema:** el endpoint `/diagnostico/lista_ip` devuelve datos de **Índice de Potencial** (evaluaciones individuales continuas), **NO** resultados de ECO. Lo verificamos cruzando los periodos de arriba con el campo `fecha_termino` de las respuestas que devuelve el API: **0 filas en cada ventana** (deberíamos ver ~41 + 52 + 91).
 
-| Endpoint | Módulo del dashboard |
-|---|---|
-| `GET /empresa/info` | Header / contexto |
-| `GET /empresa/sucursales` | Desglose por sucursal |
-| `GET /reclutamiento/lista` | Reclutamiento |
-| `GET /reclutamiento/candidatos` | Reclutamiento |
-| `GET /reclutamiento/candidato` | Reclutamiento |
-| `GET /vacante/etapas` | Reclutamiento ⚠️ sandbox da 403 |
-| `GET /vacante/tipo_contratacion` | Reclutamiento ⚠️ sandbox da 403 |
-| `GET /vacante/find` | Reclutamiento |
-| `GET /vacante/info` | Reclutamiento |
-| `GET /headcount/reporte` | Head Count |
-| `GET /headcount/campos` | Head Count |
-| `GET /diagnostico/lista_ip` | ECO (Clima Organizacional) |
-| `GET /desempeno/working_process_by_date` | Evaluación 360 |
+**Lo que necesitamos del API (en orden de preferencia):**
 
-**Operación:**
-- ¿Cuáles son los **rate limits** por cuenta?
-- ¿Requieren **whitelist de IPs**? Nuestro dashboard corre en Vercel (IPs salientes variables); si necesitan whitelist, podemos discutir alternativas.
-- ¿Soportan **webhooks** para invalidar caché cuando se cierra un ciclo de ECO o se publica una vacante?
+1. **Endpoint REST para encuestas ECO**, equivalente a las pantallas que ven los administradores en la UI:
+   - `GET /diagnostico/encuestas` — lista de encuestas: `{id, titulo, tipo, participantes, fecha_inicio, fecha_fin, avance, estatus}`
+   - `GET /diagnostico/encuesta/{id}/resultados` — agregados de UNA encuesta: `{score_global, escala, por_dimension: [{nombre, score, peso}], por_sucursal, tasa_respuesta}`
+   - `GET /diagnostico/encuesta/{id}/respuestas` — opcional: respuestas individuales agregadas (sin PII)
+
+2. **Si no hay endpoint disponible:** export programado al cerrar cada encuesta (CSV/JSON con los agregados) a un SFTP / Google Drive / S3 nuestro, o webhook al evento "encuesta cerrada".
 
 ---
 
-## 2. Endpoint correcto para resultados de Encuesta de Clima Organizacional (ECO)
+## 2️⃣ Fecha de creación de vacantes (para filtrar "Vacantes creadas en 2026")
 
-**Hallazgo crítico (2026-06-04):** descubrimos que el endpoint `/diagnostico/lista_ip` que estábamos usando NO devuelve los resultados de las encuestas ECO. Devuelve datos de **Índice de Potencial** (per-empleado, evaluaciones continuas) — métrica distinta.
+**Lo que el CEO necesita ver:** vacantes creadas en 2026.
 
-**Evidencia:**
+**Problema:** `/reclutamiento/lista` devuelve **13 campos** por vacante (`vacante_id`, `nombre`, `puesto`, `sucursal`, `sucursal_id`, `estatus`, `contratacion`, `requisitos`, `funciones`, `ofrecemos`, `localidad`, `confidencialidad`, `link`) — **ninguno con fecha**. El endpoint detalle `/vacante/find?vacante_id=X` responde 403 ("You don't have permissions to view this data") con nuestra API key.
 
-El módulo "Diagnóstico de Clima Organizacional" en la UI de SIMCO (`/diagnostico_clima_organizacional`) muestra 3 encuestas:
+**Lo que necesitamos del API (cualquiera de los dos):**
 
-| Título | Tipo | Participantes | Periodo aplicación | Avance | Estatus |
-|---|---|---|---|---|---|
-| ECO 2025 SIMCo | Privada | 47 | 01-12 Sep 2025 | 87% | TERMINADO |
-| ECO 2025 CONCEPTS | Pública | 52 | 01-08 Sep 2025 | N/A | TERMINADO |
-| ECO 2024 (2) | Privada | 91 | 01-04 Nov 2024 | 0% | TERMINADO |
+1. **Agregar `fecha_creacion`** (formato `YYYY-MM-DD HH:MM:SS`) al response de `/reclutamiento/lista`, **o**
+2. **Habilitar permisos para `/vacante/find`** en la cuenta SIMCO (potentor_id `281811`, sucursal_id `646540`) para que devuelva el detalle con fecha.
 
-Cruzamos los periodos de aplicación con la respuesta del endpoint `/diagnostico/lista_ip`:
-- Filas en API con `fecha_termino` ∈ [2025-09-01, 2025-09-12]: **0** (esperábamos ~41 para ECO 2025 SIMCo)
-- Filas en API con `fecha_termino` ∈ [2025-09-01, 2025-09-08]: **0** (esperábamos ~52 para CONCEPTS)
-- Filas en API con `fecha_termino` ∈ [2024-11-01, 2024-11-04]: **0** (esperábamos 91 para 2024(2))
-
-**Conclusión:** `/diagnostico/lista_ip` expone Índice de Potencial, NO Clima Organizacional. Las 3 encuestas ECO que ve el CEO en la UI no están disponibles en el API público.
-
-**Solicitudes:**
-
-1. **¿Cuál es el endpoint REST para resultados de encuestas ECO?** Necesitamos:
-   - Listar las encuestas registradas (id, título, tipo, periodo, participantes, avance, estatus)
-   - Score global por encuesta
-   - Breakdown por dimensión (liderazgo, ambiente, comunicación, etc.) si existe
-   - Distribución de respuestas
-   - Idealmente: respuestas individuales agregadas (sin PII) para correlaciones
-
-2. **Si NO hay endpoint para encuestas ECO:** ¿pueden agregar uno equivalente a las pantallas de `/diagnostico_clima_organizacional/*`?
-
-3. **Plan B viable mientras tanto:** webhook al cierre de cada encuesta que empuje resultados agregados a un endpoint nuestro, o export programado en CSV.
-
-**Aclaración adicional sobre `/diagnostico/lista_ip` (que SÍ sirve para Índice de Potencial):**
-
-- Escala del campo `ip`: vemos rango 0-100. ¿Es 0-100 oficialmente?
-- Wrapper devuelve `total: 3, enviados: 3` (no sabemos a qué se refiere — ¿total de IPs registrados? ¿total de diagnósticos? Confirmar).
+Sin esto, hoy usamos `estatus = "En Proceso"` como **proxy** de "vacantes 2026" — pero no es precisamente lo mismo.
 
 ---
 
-## 3. Endpoint para Evaluación 360 — la data existe en su UI pero no en el API
+## 3️⃣ Resultados de Evaluación 360
 
-Identificamos que en su plataforma la Evaluación 360 vive en:
-`https://campus.potentor.com.mx/procesos_360/grupos_asignados`
+**Lo que el CEO necesita ver:** resultados de las Evaluaciones 360 aplicadas en SIMCO.
 
-Sin embargo, probamos todas las variantes razonables en el API REST y **ninguna existe**:
+**Lo que existe en la UI:** módulo accesible en `https://campus.potentor.com.mx/procesos_360/grupos_asignados` (grupos asignados, procesos, resultados).
+
+**Problema:** ningún endpoint REST de `/api_rest/procesos_360/*` existe. Probamos exhaustivamente:
 
 | URL probada | Resultado |
 |---|---|
 | `GET /api_rest/procesos_360/grupos_asignados` | 404 |
 | `GET /api_rest/procesos_360/lista` | 404 |
 | `GET /api_rest/procesos_360/resultados` | 404 |
-| `GET /api_rest/procesos_360` | 404 |
-| `GET /api_rest/procesos_360/info` | 404 |
+| Toda variante razonable de `/procesos_360/*` | 404 |
 
-(verificado con la API key sandbox)
+Mientras tanto usamos provisionalmente `/desempeno/working_process_by_date?sucursal_id=X&year=Y` (único endpoint con parámetro `year`), pero no sabemos si efectivamente cubre 360.
 
-Entendemos que la data de 360 está disponible en su sistema (la UI funciona), pero no hay un endpoint REST para consumirla.
+**Lo que necesitamos del API (en orden de preferencia):**
 
-**Necesitamos UNA de estas tres opciones, en orden de preferencia:**
+1. **Exponer endpoints REST para 360**, equivalentes a las pantallas de `/procesos_360/*`:
+   - `GET /procesos_360/grupos_asignados?sucursal_id=X&year=Y` — listado de grupos/procesos
+   - `GET /procesos_360/resultados?proceso_id=X` — agregados (score por competencia, n respuestas, breakdown)
+   - `GET /procesos_360/ciclos?year=Y` — ciclos por año
 
-### Opción A — Exponer endpoints REST para 360 (preferida)
+2. **O confirmar** si `/desempeno/working_process_by_date` ya trae los procesos 360 y, si trae varios tipos (360 + desempeño + 9-box), cuál es el campo que los distingue (un `tipo`, `categoria`, etc.).
 
-Que expongan endpoints equivalentes a las pantallas de `/procesos_360/*`:
-
-- `GET /procesos_360/grupos_asignados?sucursal_id=X&year=Y` — listado de grupos/procesos
-- `GET /procesos_360/resultados/{proceso_id}` — resultados agregados (score por competencia, n respuestas)
-- `GET /procesos_360/ciclos?year=Y` — ciclos por año
-
-### Opción B — Confirmar que `/desempeno/working_process_by_date` cubre 360
-
-¿El endpoint existente `/desempeno/working_process_by_date?sucursal_id=X&year=Y` incluye los procesos de 360? Si sí, ¿cómo distinguimos cuáles son 360 vs evaluación de desempeño normal vs 9-box? ¿Hay un campo `tipo` en la respuesta?
-
-### Opción C — Export programado o webhook
-
-Si exponer endpoints toma tiempo, podemos arrancar con:
-- **CSV/JSON de los resultados agregados** dejado en SFTP/Drive nuestro cada vez que se cierre un ciclo de 360
-- **Webhook al cierre** de un proceso que nos empuje los resultados
-
-Cualquiera de estas tres nos destraba para el comparativo 2025 vs 2026.
+3. **Plan B viable:** webhook al cierre de un proceso 360 o export programado con resultados agregados.
 
 ---
 
-## Entrega segura
+## 🔐 Permisos pendientes en la API key de SIMCO
 
-Por favor manden la **API key por canal cifrado**:
+Estos 5 endpoints responden **403 "You don't have permissions to view this data"** con la key actual (`5575...cb06`):
 
-- Correo con PGP, o
-- 1Password / Bitwarden compartiendo con [TU EMAIL], o
-- Llamada de 15 min en vivo (preferida — cubrimos también las dudas técnicas de los puntos 2 y 3)
+- `GET /vacante/etapas`
+- `GET /vacante/tipo_contratacion`
+- `GET /vacante/find`
+- `GET /vacante/info`
+- `GET /empleado/ncp_detallado`
 
-**No la manden en WhatsApp, Slack ni correo en texto plano.**
+¿Pueden ampliar el alcance de la key para que los incluya? Los necesitamos para el catálogo de etapas del pipeline de reclutamiento y para el detalle de vacantes.
 
 ---
 
-## Cuándo lo necesitamos
+## 🔄 Operativo (preguntas finas)
 
-Idealmente esta semana para arrancar piloto con el CEO la próxima. Cualquier duda, respondo a este correo o por [TU TELÉFONO].
+- **Rate limits** aplicables a la cuenta de SIMCO
+- ¿Requieren **whitelist de IPs**? El dashboard corre en Vercel (IPs salientes variables) — si requieren whitelist podemos plantear alternativa con proxy
+- ¿Soportan **webhooks**? Útiles para invalidar caché cuando se cierra una encuesta ECO o se publica una vacante nueva
+- **Contacto técnico de soporte** + SLA esperado
+
+---
+
+## 📅 Tiempos
+
+Idealmente esta semana para tener todo listo y presentar al CEO la próxima.
+
+Cualquier duda respondo a este correo o por [TU TELÉFONO].
 
 Gracias,
 
