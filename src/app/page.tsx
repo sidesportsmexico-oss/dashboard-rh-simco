@@ -108,11 +108,11 @@ async function OverviewContent() {
           tone="teal"
         />
         <KpiCard
-          label="Vacantes abiertas"
-          value={vacResumen.abiertas}
-          hint={`${vacResumen.total} totales`}
+          label="Vacantes 2026"
+          value={vacResumen.enReclutamiento}
+          hint={`${vacResumen.total} históricas totales`}
           icon={<Briefcase className="h-4 w-4" />}
-          tone={vacResumen.abiertas > 0 ? "warning" : "default"}
+          tone={vacResumen.enReclutamiento > 0 ? "warning" : "default"}
         />
         <Suspense fallback={<KpiCard label="ECO 2026" value="…" />}>
           <EcoKpi />
@@ -134,11 +134,11 @@ async function OverviewContent() {
         </SectionCard>
 
         <SectionCard
-          title="Vacantes por sucursal"
-          description="Top 6 con más vacantes registradas"
+          title="Vacantes 2026 por sucursal"
+          description="Sucursales con reclutamiento activo"
         >
           <ul className="space-y-2">
-            {[...vacResumen.porSucursal.entries()]
+            {[...vacResumen.porSucursal2026.entries()]
               .sort((a, b) => b[1] - a[1])
               .slice(0, 6)
               .map(([sucursal, count]) => (
@@ -154,9 +154,9 @@ async function OverviewContent() {
                   </span>
                 </li>
               ))}
-            {vacResumen.porSucursal.size === 0 && (
+            {vacResumen.porSucursal2026.size === 0 && (
               <li className="text-sm text-[var(--color-text-dim)]">
-                Sin datos
+                Sin vacantes en reclutamiento
               </li>
             )}
           </ul>

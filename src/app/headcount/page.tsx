@@ -32,7 +32,10 @@ async function Content() {
   const hcResumen = resumenHeadcount(headcount);
   const vacResumen = resumenVacantes(vacantes);
 
-  const totalEstructura = hcResumen.total + vacResumen.abiertas;
+  // Para cobertura: usamos las vacantes 2026 (En Proceso) como "abiertas" reales.
+  // Standby no son posiciones que estemos buscando ocupar ahora.
+  const vacantesAbiertas2026 = vacResumen.enReclutamiento;
+  const totalEstructura = hcResumen.total + vacantesAbiertas2026;
   const cobertura =
     totalEstructura > 0 ? (hcResumen.total / totalEstructura) * 100 : 0;
 
@@ -70,15 +73,15 @@ async function Content() {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent-orange)]">
-              Vacantes abiertas
+              Vacantes 2026
             </span>
             <Briefcase className="h-5 w-5 text-[var(--color-accent-orange)]" />
           </div>
           <p className="text-6xl font-semibold tracking-tight tabular-nums text-[var(--color-text)]">
-            {formatNumber(vacResumen.abiertas)}
+            {formatNumber(vacantesAbiertas2026)}
           </p>
           <p className="text-xs text-[var(--color-text-dim)]">
-            {vacResumen.total} vacantes registradas en total
+            Activamente en reclutamiento ahora
           </p>
         </div>
       </div>
@@ -97,7 +100,7 @@ async function Content() {
             </div>
             <div className="flex justify-between text-xs text-[var(--color-text-dim)] mt-2 tabular-nums">
               <span>{formatNumber(hcResumen.total)} ocupadas</span>
-              <span>{formatNumber(vacResumen.abiertas)} abiertas</span>
+              <span>{formatNumber(vacantesAbiertas2026)} en reclutamiento</span>
             </div>
           </div>
           <div className="text-3xl font-semibold tabular-nums text-[var(--color-text)]">
