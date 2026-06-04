@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -13,14 +11,6 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import type {
-  MonthlyTrendPoint,
-  AreaComparison,
-  DistribucionBucket,
-} from "@/lib/potentor/diagnostico";
-
-const COLOR_A = "#7a8fa8"; // 2025 — muted blueish gray
-const COLOR_B = "#00d4aa"; // 2026 — teal accent
 
 const tooltipStyle = {
   backgroundColor: "#0f1420",
@@ -31,29 +21,37 @@ const tooltipStyle = {
 };
 const axisStyle = { fill: "#7a8fa8", fontSize: 11 };
 
-// ============== TENDENCIA MENSUAL ==============
+// Paleta por encuesta — 1 color por id
+export const ENCUESTA_COLOR: Record<string, string> = {
+  eco_2024_2: "#7a8fa8", // gris azulado — histórica
+  eco_2025_simco: "#00d4aa", // teal — corporativo, signature
+  eco_2025_concepts: "#fb923c", // orange — operativo
+};
 
-export function EcoTendenciaMensualChart({
+// ============== COMPARATIVO DE SCORES (1 barra por encuesta) ==============
+
+export function EcoScoreComparativoChart({
   data,
-  yearA,
-  yearB,
 }: {
-  data: MonthlyTrendPoint[];
-  yearA: number;
-  yearB: number;
+  data: { id: string; nombre: string; promedioIp: number | null }[];
 }) {
+  const rows = data.map((d) => ({
+    name: d.nombre,
+    score: d.promedioIp ?? 0,
+    color: ENCUESTA_COLOR[d.id] ?? "#7a8fa8",
+  }));
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2737" />
-          <XAxis dataKey="month" stroke="#7a8fa8" tick={axisStyle} />
+        <BarChart data={rows} margin={{ top: 12, right: 24, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#1f2737" vertical={false} />
+          <XAxis dataKey="name" stroke="#7a8fa8" tick={axisStyle} />
           <YAxis
             domain={[0, 100]}
             stroke="#7a8fa8"
             tick={axisStyle}
             label={{
-              value: "Índice de Percepción",
+              value: "Score / 100",
               angle: -90,
               position: "insideLeft",
               fill: "#7a8fa8",
@@ -61,122 +59,47 @@ export function EcoTendenciaMensualChart({
             }}
           />
           <Tooltip
-            contentStyle={tooltipStyle}
-            labelStyle={{ color: "#a0aec0" }}
-            formatter={(value, name) => {
-              if (value === null || value === undefined)
-                return ["Sin respuestas", String(name)];
-              return [Number(value).toFixed(1), String(name)];
-            }}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 12, color: "#a0aec0", paddingTop: 8 }}
-            iconType="circle"
-          />
-          <Line
-            type="monotone"
-            dataKey="yearA"
-            name={String(yearA)}
-            stroke={COLOR_A}
-            strokeWidth={2}
-            dot={{ r: 3, fill: COLOR_A }}
-            connectNulls
-          />
-          <Line
-            type="monotone"
-            dataKey="yearB"
-            name={String(yearB)}
-            stroke={COLOR_B}
-            strokeWidth={2.5}
-            dot={{ r: 4, fill: COLOR_B }}
-            connectNulls
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// ============== COMPARATIVO POR ÁREA ==============
-
-export function EcoAreaComparisonChart({
-  data,
-  yearA,
-  yearB,
-}: {
-  data: AreaComparison[];
-  yearA: number;
-  yearB: number;
-}) {
-  if (data.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64 text-sm text-[var(--color-text-dim)]">
-        Sin áreas con respuestas en ambos años
-      </div>
-    );
-  }
-  return (
-    <div className="h-80 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ top: 8, right: 24, left: 20, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2737" horizontal={false} />
-          <XAxis type="number" domain={[0, 100]} stroke="#7a8fa8" tick={axisStyle} />
-          <YAxis
-            type="category"
-            dataKey="area"
-            stroke="#7a8fa8"
-            tick={axisStyle}
-            width={180}
-          />
-          <Tooltip
             cursor={{ fill: "rgba(0, 212, 170, 0.06)" }}
             contentStyle={tooltipStyle}
             labelStyle={{ color: "#a0aec0" }}
-            formatter={(v) =>
-              v === null || v === undefined ? "Sin datos" : Number(v).toFixed(1)
-            }
+            formatter={(v) => [Number(v).toFixed(1), "Score promedio"]}
           />
-          <Legend
-            wrapperStyle={{ fontSize: 12, color: "#a0aec0", paddingTop: 8 }}
-            iconType="circle"
-          />
-          <Bar
-            dataKey="yearA"
-            name={String(yearA)}
-            fill={COLOR_A}
-            radius={[0, 4, 4, 0]}
-          />
-          <Bar
-            dataKey="yearB"
-            name={String(yearB)}
-            fill={COLOR_B}
-            radius={[0, 4, 4, 0]}
-          />
+          <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+            {rows.map((r, i) => (
+              <Cell key={i} fill={r.color} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-// ============== DISTRIBUCIÓN DE SCORES ==============
+// ============== DISTRIBUCIÓN DE SCORES (3 series superpuestas) ==============
 
-export function EcoDistribucionChart({
+export function EcoDistribucionPorEncuestaChart({
   data,
-  yearA,
-  yearB,
 }: {
-  data: DistribucionBucket[];
-  yearA: number;
-  yearB: number;
+  data: {
+    range: string;
+    encuestas: { id: string; nombre: string; count: number }[];
+  }[];
 }) {
+  // Transform to wide format for recharts
+  const ids = data[0]?.encuestas.map((e) => e.id) ?? [];
+  const nombres = Object.fromEntries(
+    data[0]?.encuestas.map((e) => [e.id, e.nombre]) ?? [],
+  );
+  const rows = data.map((d) => {
+    const out: Record<string, string | number> = { range: d.range };
+    for (const e of d.encuestas) out[e.id] = e.count;
+    return out;
+  });
+
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2737" vertical={false} />
           <XAxis dataKey="range" stroke="#7a8fa8" tick={axisStyle} />
           <YAxis stroke="#7a8fa8" tick={axisStyle} allowDecimals={false} />
@@ -190,71 +113,78 @@ export function EcoDistribucionChart({
             wrapperStyle={{ fontSize: 12, color: "#a0aec0", paddingTop: 8 }}
             iconType="circle"
           />
-          <Bar
-            dataKey="yearA"
-            name={String(yearA)}
-            fill={COLOR_A}
-            radius={[4, 4, 0, 0]}
-          />
-          <Bar
-            dataKey="yearB"
-            name={String(yearB)}
-            fill={COLOR_B}
-            radius={[4, 4, 0, 0]}
-          />
+          {ids.map((id) => (
+            <Bar
+              key={id}
+              dataKey={id}
+              name={nombres[id]}
+              fill={ENCUESTA_COLOR[id] ?? "#7a8fa8"}
+              radius={[3, 3, 0, 0]}
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-// ============== DELTA POR ÁREA (TIPO "WATERFALL" HORIZONTAL) ==============
+// ============== TASA DE RESPUESTA POR ENCUESTA ==============
 
-export function EcoDeltaAreaChart({ data }: { data: AreaComparison[] }) {
-  const filtered = data.filter((d) => d.delta !== null) as (AreaComparison & {
-    delta: number;
-  })[];
-  if (filtered.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-48 text-sm text-[var(--color-text-dim)]">
-        Sin áreas comparables
-      </div>
-    );
-  }
+export function EcoTasaRespuestaChart({
+  data,
+}: {
+  data: {
+    id: string;
+    nombre: string;
+    respondieron: number;
+    total: number;
+    tasaRespuesta: number;
+  }[];
+}) {
+  const rows = data.map((d) => ({
+    name: d.nombre,
+    respondieron: d.respondieron,
+    pendientes: Math.max(d.total - d.respondieron, 0),
+    color: ENCUESTA_COLOR[d.id] ?? "#7a8fa8",
+  }));
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={filtered}
+          data={rows}
           layout="vertical"
           margin={{ top: 8, right: 24, left: 16, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2737" horizontal={false} />
-          <XAxis type="number" stroke="#7a8fa8" tick={axisStyle} />
+          <XAxis type="number" stroke="#7a8fa8" tick={axisStyle} allowDecimals={false} />
           <YAxis
             type="category"
-            dataKey="area"
+            dataKey="name"
             stroke="#7a8fa8"
             tick={axisStyle}
-            width={180}
+            width={160}
           />
           <Tooltip
             cursor={{ fill: "rgba(0, 212, 170, 0.06)" }}
             contentStyle={tooltipStyle}
             labelStyle={{ color: "#a0aec0" }}
-            formatter={(v) => {
-              const n = Number(v);
-              return `${n > 0 ? "+" : ""}${n.toFixed(1)} pts`;
-            }}
           />
-          <Bar dataKey="delta" radius={[0, 4, 4, 0]}>
-            {filtered.map((d, i) => (
-              <Cell
-                key={i}
-                fill={d.delta >= 0 ? COLOR_B : "#ff5050"}
-              />
+          <Bar dataKey="respondieron" name="Respondieron" stackId="t" radius={[0, 0, 0, 0]}>
+            {rows.map((r, i) => (
+              <Cell key={i} fill={r.color} />
             ))}
           </Bar>
+          <Bar
+            dataKey="pendientes"
+            name="No respondieron"
+            stackId="t"
+            fill="#3a4555"
+            radius={[0, 4, 4, 0]}
+          />
+          <Legend
+            wrapperStyle={{ fontSize: 12, color: "#a0aec0", paddingTop: 8 }}
+            iconType="circle"
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>

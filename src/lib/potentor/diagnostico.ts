@@ -87,6 +87,122 @@ function scoreOf(row: IPRow): number {
   return Number(row.ip) || 0;
 }
 
+// ============ Modelo de Encuestas ECO ============
+//
+// El API /diagnostico/lista_ip mezcla TODAS las respuestas de TODOS los
+// diagnósticos sin un campo encuesta_id. SIMCO confirmó (2026-06-04) la
+// segmentación interna:
+//
+// - SIMCO    = personal corporativo  → sucursal=SIMCo AND area ≠ "Operativa"
+// - CONCEPTS = personal operativo de restaurantes (Batbox + Mulligans)
+//              → sucursal=SIMCo AND area = "Operativa"
+//
+// La fecha (fecha_termino) define a qué edición (año) pertenece la respuesta.
+
+export type EncuestaDef = {
+  id: string;
+  nombre: string;
+  audiencia: "Corporativo" | "Operativo" | "Mixto";
+  year: number;
+  filter: (row: IPRow) => boolean;
+};
+
+function inSimco(r: IPRow): boolean {
+  return /\bsimco\b/i.test(r.sucursal ?? "");
+}
+function isOperativa(r: IPRow): boolean {
+  return /\boperativa\b/i.test(r.area ?? "");
+}
+function yearStartsWith(r: IPRow, year: number): boolean {
+  return (r.fecha_termino ?? "").startsWith(String(year));
+}
+
+export const ENCUESTAS_ECO: EncuestaDef[] = [
+  {
+    id: "eco_2024_2",
+    nombre: "ECO 2024 (2)",
+    audiencia: "Mixto",
+    year: 2024,
+    filter: (r) => inSimco(r) && yearStartsWith(r, 2024),
+  },
+  {
+    id: "eco_2025_simco",
+    nombre: "ECO 2025 SIMCO",
+    audiencia: "Corporativo",
+    year: 2025,
+    filter: (r) => inSimco(r) && yearStartsWith(r, 2025) && !isOperativa(r),
+  },
+  {
+    id: "eco_2025_concepts",
+    nombre: "ECO 2025 CONCEPTS",
+    audiencia: "Operativo",
+    year: 2025,
+    filter: (r) => inSimco(r) && yearStartsWith(r, 2025) && isOperativa(r),
+  },
+];
+
+export type EncuestaResumen = {
+  def: EncuestaDef;
+  rows: IPRow[];
+  respondieron: number;
+  total: number;
+  tasaRespuesta: number;
+  promedioIp: number | null;
+  porArea: Map<string, { suma: number; n: number; promedio: number }>;
+  porDepartamento: Map<string, { suma: number; n: number; promedio: number }>;
+  distribucion: number[]; // 10 buckets de 10 puntos
+};
+
+function bucketIndex(ip: number): number {
+  return Math.min(Math.max(Math.floor(ip / 10), 0), 9);
+}
+
+export function resumirEncuesta(rows: IPRow[], def: EncuestaDef): EncuestaResumen {
+  const filtered = rows.filter(def.filter);
+  const distribucion = new Array(10).fill(0);
+  const porArea = new Map<string, { suma: number; n: number; promedio: number }>();
+  const porDepartamento = new Map<
+    string,
+    { suma: number; n: number; promedio: number }
+  >();
+  let suma = 0;
+  let respondieron = 0;
+  for (const r of filtered) {
+    const ip = scoreOf(r);
+    if (ip <= 0) continue;
+    respondieron++;
+    suma += ip;
+    distribucion[bucketIndex(ip)]++;
+    const areaKey = r.area?.trim() || "Sin área";
+    const depKey = r.departamento?.trim() || "Sin departamento";
+    const ax = porArea.get(areaKey) ?? { suma: 0, n: 0, promedio: 0 };
+    ax.suma += ip;
+    ax.n += 1;
+    ax.promedio = ax.suma / ax.n;
+    porArea.set(areaKey, ax);
+    const dx = porDepartamento.get(depKey) ?? { suma: 0, n: 0, promedio: 0 };
+    dx.suma += ip;
+    dx.n += 1;
+    dx.promedio = dx.suma / dx.n;
+    porDepartamento.set(depKey, dx);
+  }
+  return {
+    def,
+    rows: filtered,
+    respondieron,
+    total: filtered.length,
+    tasaRespuesta: filtered.length > 0 ? respondieron / filtered.length : 0,
+    promedioIp: respondieron > 0 ? suma / respondieron : null,
+    porArea,
+    porDepartamento,
+    distribucion,
+  };
+}
+
+export function compararEncuestas(rows: IPRow[]): EncuestaResumen[] {
+  return ENCUESTAS_ECO.map((def) => resumirEncuesta(rows, def));
+}
+
 /** Particiona las filas por año (de fecha_termino) y devuelve un resumen por año. */
 export function resumirEcoPorAnio(rows: IPRow[]): Map<number, EcoResumenAnio> {
   const byYear = new Map<number, IPRow[]>();

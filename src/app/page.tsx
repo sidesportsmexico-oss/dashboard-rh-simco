@@ -16,7 +16,7 @@ import {
 import { getEmpresaInfo } from "@/lib/potentor/empresa";
 import {
   getEcoResultados,
-  resumirEcoPorAnio,
+  compararEncuestas,
 } from "@/lib/potentor/diagnostico";
 import { FunnelChart } from "@/components/funnel-chart";
 
@@ -25,22 +25,28 @@ export const revalidate = 600;
 async function EcoKpi() {
   try {
     const resp = await getEcoResultados();
-    const byYear = resumirEcoPorAnio(resp.data ?? []);
-    const r26 = byYear.get(2026) ?? null;
-    const r25 = byYear.get(2025) ?? null;
+    const encuestas = compararEncuestas(resp.data ?? []);
+    const ecoSimco = encuestas.find((e) => e.def.id === "eco_2025_simco");
+    const eco24 = encuestas.find((e) => e.def.id === "eco_2024_2");
     return (
       <KpiCard
-        label="ECO 2026"
-        value={r26?.promedioIp !== null && r26 != null ? r26.promedioIp.toFixed(1) : "—"}
+        label="ECO 2025 SIMCO"
+        value={
+          ecoSimco?.promedioIp != null
+            ? ecoSimco.promedioIp.toFixed(1)
+            : "—"
+        }
         hint={
-          r25?.promedioIp != null
-            ? `2025: ${r25.promedioIp.toFixed(1)}`
-            : "Sin base 2025"
+          eco24?.promedioIp != null
+            ? `vs ECO 2024: ${eco24.promedioIp.toFixed(1)}`
+            : "Sin base histórica"
         }
         trend={
-          r25?.promedioIp != null && r26?.promedioIp != null
+          eco24?.promedioIp != null && ecoSimco?.promedioIp != null
             ? {
-                delta: Number((r26.promedioIp - r25.promedioIp).toFixed(1)),
+                delta: Number(
+                  (ecoSimco.promedioIp - eco24.promedioIp).toFixed(1),
+                ),
               }
             : undefined
         }
@@ -51,7 +57,7 @@ async function EcoKpi() {
   } catch {
     return (
       <KpiCard
-        label="ECO 2026"
+        label="ECO 2025 SIMCO"
         value="—"
         hint="Error al cargar"
         tone="warning"
@@ -114,7 +120,9 @@ async function OverviewContent() {
           icon={<Briefcase className="h-4 w-4" />}
           tone={vacResumen.enReclutamiento > 0 ? "warning" : "default"}
         />
-        <Suspense fallback={<KpiCard label="ECO 2026" value="…" />}>
+        <Suspense
+          fallback={<KpiCard label="ECO 2025 SIMCO" value="…" />}
+        >
           <EcoKpi />
         </Suspense>
         <KpiCard

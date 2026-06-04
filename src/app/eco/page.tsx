@@ -1,30 +1,23 @@
 import { Suspense } from "react";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Building2, Utensils, Archive } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
 import { PageHeader } from "@/components/page-header";
 import {
-  EcoTendenciaMensualChart,
-  EcoAreaComparisonChart,
-  EcoDistribucionChart,
-  EcoDeltaAreaChart,
+  EcoScoreComparativoChart,
+  EcoDistribucionPorEncuestaChart,
+  EcoTasaRespuestaChart,
+  ENCUESTA_COLOR,
 } from "@/components/eco-charts";
 import {
   getEcoResultados,
-  resumirEcoPorAnio,
-  compararEco,
-  buildTendenciaMensual,
-  buildComparativoPorArea,
-  buildDistribucionScores,
-  type EcoResumenAnio,
+  compararEncuestas,
+  type EncuestaResumen,
 } from "@/lib/potentor/diagnostico";
 import { cn, formatPercent } from "@/lib/utils";
 
 export const revalidate = 600;
-
-const YEAR_A = 2025;
-const YEAR_B = 2026;
 
 async function Content() {
   let resp;
@@ -40,98 +33,116 @@ async function Content() {
   }
 
   const rows = resp.data ?? [];
-  const resumenPorAnio = resumirEcoPorAnio(rows);
-  const comp = compararEco(resumenPorAnio, YEAR_A, YEAR_B);
+  const encuestas = compararEncuestas(rows);
 
-  const yearsDisponibles = [...resumenPorAnio.keys()].sort();
+  // Deltas útiles para el CEO
+  const eco24 = encuestas.find((e) => e.def.id === "eco_2024_2");
+  const ecoSimco = encuestas.find((e) => e.def.id === "eco_2025_simco");
+  const ecoConcepts = encuestas.find((e) => e.def.id === "eco_2025_concepts");
 
-  // Datos para gráficas comparativas
-  const tendenciaMensual = buildTendenciaMensual(rows, YEAR_A, YEAR_B);
-  const comparativoArea = buildComparativoPorArea(rows, YEAR_A, YEAR_B);
-  const distribucion = buildDistribucionScores(rows, YEAR_A, YEAR_B);
+  const deltaSimcoVs24 =
+    ecoSimco?.promedioIp != null && eco24?.promedioIp != null
+      ? ecoSimco.promedioIp - eco24.promedioIp
+      : null;
+  const deltaCorpVsOp =
+    ecoSimco?.promedioIp != null && ecoConcepts?.promedioIp != null
+      ? ecoSimco.promedioIp - ecoConcepts.promedioIp
+      : null;
+
+  // Datos para charts
+  const scoreComparativo = encuestas.map((e) => ({
+    id: e.def.id,
+    nombre: e.def.nombre,
+    promedioIp: e.promedioIp,
+  }));
+
+  // Distribución cross-encuesta
+  const distRows = Array.from({ length: 10 }, (_, i) => ({
+    range: `${i * 10}-${(i + 1) * 10}`,
+    encuestas: encuestas.map((e) => ({
+      id: e.def.id,
+      nombre: e.def.nombre,
+      count: e.distribucion[i] ?? 0,
+    })),
+  }));
+
+  const tasaRows = encuestas.map((e) => ({
+    id: e.def.id,
+    nombre: e.def.nombre,
+    respondieron: e.respondieron,
+    total: e.total,
+    tasaRespuesta: e.tasaRespuesta,
+  }));
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="ECO — Encuesta de Clima Organizacional"
-        subtitle={
-          yearsDisponibles.length > 0
-            ? `Años disponibles: ${yearsDisponibles.join(", ")}`
-            : "Sin datos"
-        }
-        tags={["Vista CEO", "Diagnóstico de Clima"]}
+        title="ECO — Diagnóstico de Clima Organizacional"
+        subtitle="3 ediciones aplicadas · comparativo entre audiencias y años"
+        tags={["Vista CEO", "SIMCO + CONCEPTS"]}
       />
 
-      {yearsDisponibles.length === 0 && (
-        <ErrorBanner
-          title="Sin resultados de ECO en el rango consultado"
-          detail="El endpoint /diagnostico/lista_ip respondió, pero no hay filas con fecha_termino válida."
+      {/* 3 cards con resumen de cada encuesta */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <EncuestaCard
+          resumen={eco24}
+          icon={<Archive className="h-5 w-5" />}
         />
-      )}
-
-      {/* Comparativo grande 2025 vs 2026 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <YearCard year={YEAR_A} resumen={comp.a} tone="muted" />
-        <YearCard year={YEAR_B} resumen={comp.b} tone="primary" />
+        <EncuestaCard
+          resumen={ecoSimco}
+          icon={<Building2 className="h-5 w-5" />}
+          highlight
+        />
+        <EncuestaCard
+          resumen={ecoConcepts}
+          icon={<Utensils className="h-5 w-5" />}
+        />
       </div>
 
-      {/* Deltas */}
+      {/* Deltas clave */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KpiCard
-          label={`Δ Score promedio (${YEAR_B} vs ${YEAR_A})`}
-          value={
-            comp.deltaPromedio !== null ? comp.deltaPromedio.toFixed(1) : "—"
-          }
+          label="Δ SIMCO 2025 vs ECO 2024"
+          value={deltaSimcoVs24 !== null ? deltaSimcoVs24.toFixed(1) : "—"}
           hint={
-            comp.a?.promedioIp != null && comp.b?.promedioIp != null
-              ? `${comp.a.promedioIp.toFixed(1)} → ${comp.b.promedioIp.toFixed(1)}`
+            ecoSimco?.promedioIp != null && eco24?.promedioIp != null
+              ? `${eco24.promedioIp.toFixed(1)} → ${ecoSimco.promedioIp.toFixed(1)}`
               : "Sin base de comparación"
           }
           tone={
-            comp.deltaPromedio === null
+            deltaSimcoVs24 === null
               ? "default"
-              : comp.deltaPromedio > 0
+              : deltaSimcoVs24 > 0
                 ? "success"
-                : comp.deltaPromedio < 0
+                : deltaSimcoVs24 < 0
                   ? "danger"
                   : "default"
           }
         />
         <KpiCard
-          label={`Δ Tasa de respuesta`}
-          value={
-            comp.deltaTasa !== null
-              ? `${(comp.deltaTasa * 100).toFixed(1)}%`
-              : "—"
-          }
+          label="Δ Corporativo vs Operativo (2025)"
+          value={deltaCorpVsOp !== null ? deltaCorpVsOp.toFixed(1) : "—"}
           hint={
-            comp.a && comp.b
-              ? `${formatPercent(comp.a.tasaRespuesta * 100)} → ${formatPercent(comp.b.tasaRespuesta * 100)}`
-              : "Sin base de comparación"
+            ecoSimco?.promedioIp != null && ecoConcepts?.promedioIp != null
+              ? `SIMCO ${ecoSimco.promedioIp.toFixed(1)} vs CONCEPTS ${ecoConcepts.promedioIp.toFixed(1)}`
+              : "Sin base"
           }
           tone={
-            comp.deltaTasa === null
+            deltaCorpVsOp === null
               ? "default"
-              : comp.deltaTasa > 0
-                ? "success"
-                : comp.deltaTasa < 0
-                  ? "warning"
-                  : "default"
+              : Math.abs(deltaCorpVsOp) > 5
+                ? "warning"
+                : "default"
           }
         />
       </div>
 
-      {/* GRÁFICAS COMPARATIVAS 2025 vs 2026 */}
-
+      {/* Comparativo bar chart */}
       <SectionCard
-        title={`Tendencia mensual · ${YEAR_A} vs ${YEAR_B}`}
-        description="Score promedio por mes de aplicación de la encuesta"
+        title="Score promedio por encuesta"
+        description="Comparativo lado a lado de las 3 ediciones aplicadas"
       >
-        <EcoTendenciaMensualChart
-          data={tendenciaMensual}
-          yearA={YEAR_A}
-          yearB={YEAR_B}
-        />
+        <EcoScoreComparativoChart data={scoreComparativo} />
       </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -139,141 +150,93 @@ async function Content() {
           title="Distribución de scores"
           description="Cuántas personas respondieron en cada rango (0-100)"
         >
-          <EcoDistribucionChart
-            data={distribucion}
-            yearA={YEAR_A}
-            yearB={YEAR_B}
-          />
+          <EcoDistribucionPorEncuestaChart data={distRows} />
         </SectionCard>
 
         <SectionCard
-          title="Cambio por área"
-          description={`Δ ${YEAR_B} vs ${YEAR_A} (verde = mejoró, rojo = empeoró)`}
+          title="Tasa de respuesta"
+          description="Respondieron vs no respondieron por encuesta"
         >
-          <EcoDeltaAreaChart data={comparativoArea} />
+          <EcoTasaRespuestaChart data={tasaRows} />
         </SectionCard>
       </div>
 
-      <SectionCard
-        title="Score promedio por área"
-        description={`Comparativo lado a lado ${YEAR_A} vs ${YEAR_B}`}
-      >
-        <EcoAreaComparisonChart
-          data={comparativoArea}
-          yearA={YEAR_A}
-          yearB={YEAR_B}
-        />
-      </SectionCard>
-
-      {/* Desgloses tabulares originales */}
-      {comp.b && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BreakdownCard
-            title={`Top sucursales ${YEAR_B}`}
-            description="Score promedio (Índice de Percepción)"
-            entries={comp.b.porSucursal}
-          />
-          <BreakdownCard
-            title={`Top áreas ${YEAR_B}`}
-            description="Score promedio (Índice de Percepción)"
-            entries={comp.b.porArea}
-          />
-        </div>
-      )}
+      {/* Desgloses tabulares por encuesta */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {encuestas.map((e) => (
+          <EncuestaBreakdown key={e.def.id} resumen={e} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function YearCard({
-  year,
+function EncuestaCard({
   resumen,
-  tone,
+  icon,
+  highlight = false,
 }: {
-  year: number;
-  resumen: EcoResumenAnio | null;
-  tone: "primary" | "muted";
+  resumen: EncuestaResumen | undefined;
+  icon: React.ReactNode;
+  highlight?: boolean;
 }) {
-  const borderClass =
-    tone === "primary"
-      ? "border-[var(--color-accent-teal)]/30 shadow-[0_0_36px_-18px_var(--color-accent-teal)]"
-      : "border-[var(--color-border)]";
-
-  const labelColor =
-    tone === "primary"
-      ? "text-[var(--color-accent-teal)]"
-      : "text-[var(--color-text-muted)]";
-
   if (!resumen) {
     return (
-      <div
-        className={cn(
-          "rounded-2xl border bg-[var(--color-bg-card)] p-8 flex flex-col gap-2",
-          borderClass,
-        )}
-      >
-        <span
-          className={cn(
-            "text-[11px] font-medium uppercase tracking-[0.18em]",
-            labelColor,
-          )}
-        >
-          ECO {year}
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 flex flex-col gap-2">
+        <span className="text-sm text-[var(--color-text-dim)]">
+          Encuesta no encontrada
         </span>
-        <p className="text-3xl font-semibold text-[var(--color-text-dim)]">
-          Sin datos
-        </p>
-        <p className="text-xs text-[var(--color-text-dim)]">
-          No hay encuestas con fecha_termino en {year}
-        </p>
       </div>
     );
   }
+  const color = ENCUESTA_COLOR[resumen.def.id] ?? "#7a8fa8";
+  const borderStyle = highlight
+    ? { borderColor: color, boxShadow: `0 0 36px -18px ${color}` }
+    : { borderColor: "#3a4555" };
+
   return (
     <div
-      className={cn(
-        "rounded-2xl border bg-[var(--color-bg-card)] p-8 flex flex-col gap-4",
-        borderClass,
-      )}
+      className="rounded-2xl border bg-[var(--color-bg-card)] p-6 flex flex-col gap-4"
+      style={borderStyle}
     >
-      <div className="flex items-center justify-between">
-        <span
-          className={cn(
-            "text-[11px] font-medium uppercase tracking-[0.18em]",
-            labelColor,
-          )}
-        >
-          ECO {year}
-        </span>
-        <ClipboardList
-          className={cn(
-            "h-5 w-5",
-            tone === "primary"
-              ? "text-[var(--color-accent-teal)]"
-              : "text-[var(--color-text-dim)]",
-          )}
-        />
+      <div className="flex items-start justify-between">
+        <div>
+          <p
+            className="text-[11px] font-medium uppercase tracking-[0.16em]"
+            style={{ color }}
+          >
+            {resumen.def.audiencia}
+          </p>
+          <h3 className="text-lg font-semibold text-[var(--color-text)] mt-1">
+            {resumen.def.nombre}
+          </h3>
+        </div>
+        <span style={{ color }}>{icon}</span>
       </div>
+
       <div className="flex items-baseline gap-2">
-        <p className="text-6xl font-semibold tracking-tight tabular-nums text-[var(--color-text)]">
+        <p className="text-5xl font-semibold tracking-tight tabular-nums text-[var(--color-text)]">
           {resumen.promedioIp !== null ? resumen.promedioIp.toFixed(1) : "—"}
         </p>
         <p className="text-sm text-[var(--color-text-dim)]">/ 100</p>
       </div>
+
       <div className="grid grid-cols-2 gap-4 pt-3 border-t border-[var(--color-border-subtle)]">
         <div>
           <p className="text-[10px] text-[var(--color-text-dim)] uppercase tracking-wider">
             Respondieron
           </p>
           <p className="text-lg font-medium tabular-nums text-[var(--color-text)]">
-            {resumen.respondieron}{" "}
+            {resumen.respondieron}
             <span className="text-xs text-[var(--color-text-dim)]">
-              / {resumen.totalInvitados}
+              {" "}
+              / {resumen.total}
             </span>
           </p>
         </div>
         <div>
           <p className="text-[10px] text-[var(--color-text-dim)] uppercase tracking-wider">
-            Tasa respuesta
+            Tasa
           </p>
           <p className="text-lg font-medium tabular-nums text-[var(--color-text)]">
             {formatPercent(resumen.tasaRespuesta * 100)}
@@ -284,35 +247,36 @@ function YearCard({
   );
 }
 
-function BreakdownCard({
-  title,
-  description,
-  entries,
-}: {
-  title: string;
-  description: string;
-  entries: Map<string, { suma: number; n: number; promedio: number }>;
-}) {
-  const sorted = [...entries.entries()]
+function EncuestaBreakdown({ resumen }: { resumen: EncuestaResumen }) {
+  const color = ENCUESTA_COLOR[resumen.def.id] ?? "#7a8fa8";
+  const sorted = [...resumen.porDepartamento.entries()]
+    .filter(([, s]) => s.n > 0)
     .sort((a, b) => b[1].promedio - a[1].promedio)
-    .slice(0, 6);
+    .slice(0, 8);
   return (
-    <SectionCard title={title} description={description}>
+    <SectionCard
+      title={resumen.def.nombre}
+      description="Top departamentos · score promedio"
+    >
       {sorted.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-dim)]">
-          Sin respuestas con score &gt; 0
-        </p>
+        <p className="text-sm text-[var(--color-text-dim)]">Sin respuestas</p>
       ) : (
         <ul className="space-y-1">
           {sorted.map(([name, stats]) => (
             <li
               key={name}
-              className="flex items-center justify-between text-sm py-2 border-b border-[var(--color-border-subtle)] last:border-0"
+              className="flex items-center justify-between text-sm py-1.5 border-b border-[var(--color-border-subtle)] last:border-0"
             >
-              <span className="text-[var(--color-text-muted)] truncate pr-3">
-                {name}
+              <span className="flex items-center gap-2 truncate pr-2">
+                <span
+                  className="h-1.5 w-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-[var(--color-text-muted)] truncate">
+                  {name}
+                </span>
               </span>
-              <span className="flex items-center gap-3 shrink-0">
+              <span className="flex items-center gap-2 shrink-0">
                 <span className="text-[10px] text-[var(--color-text-dim)] tabular-nums">
                   n={stats.n}
                 </span>
