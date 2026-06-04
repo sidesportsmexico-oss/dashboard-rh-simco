@@ -45,17 +45,44 @@ Necesitamos:
 
 ---
 
-## 2. Aclaraciones sobre ECO (Encuesta de Clima Organizacional)
+## 2. Endpoint correcto para resultados de Encuesta de Clima Organizacional (ECO)
 
-El endpoint `/diagnostico/lista_ip` está mal etiquetado en su OpenAPI spec como "Índice de Potencial", pero confirmamos con el cliente que es el Diagnóstico de Clima Organizacional (ECO). Funcionando contra sandbox. Quedan 4 dudas finas para presentar bien al CEO:
+**Hallazgo crítico (2026-06-04):** descubrimos que el endpoint `/diagnostico/lista_ip` que estábamos usando NO devuelve los resultados de las encuestas ECO. Devuelve datos de **Índice de Potencial** (per-empleado, evaluaciones continuas) — métrica distinta.
 
-1. **Escala del campo `ip`** — sandbox tiene scores de 0 a 63. ¿El rango es 0-100? ¿Otro? Lo necesitamos para que el "46.3 / 100" tenga la escala correcta.
+**Evidencia:**
 
-2. **Breakdown por dimensión** — el endpoint actual da un score global (`ip`) por persona. ¿Existe endpoint o parámetro para traer el score desglosado por dimensión (liderazgo, ambiente, comunicación, desarrollo, etc.)? Eso le da mucho más valor al CEO.
+El módulo "Diagnóstico de Clima Organizacional" en la UI de SIMCO (`/diagnostico_clima_organizacional`) muestra 3 encuestas:
 
-3. **Wrapper `total` y `enviados`** — en sandbox vienen como `"0"` y `0`. ¿En producción reflejan invitados / respondieron? ¿Cómo los calculan?
+| Título | Tipo | Participantes | Periodo aplicación | Avance | Estatus |
+|---|---|---|---|---|---|
+| ECO 2025 SIMCo | Privada | 47 | 01-12 Sep 2025 | 87% | TERMINADO |
+| ECO 2025 CONCEPTS | Pública | 52 | 01-08 Sep 2025 | N/A | TERMINADO |
+| ECO 2024 (2) | Privada | 91 | 01-04 Nov 2024 | 0% | TERMINADO |
 
-4. **Filtro por año** — hoy filtramos client-side por `fecha_termino.year` para hacer comparativo 2025 vs 2026. ¿Hay parámetro `year` nativo en este endpoint, o esa es la forma correcta?
+Cruzamos los periodos de aplicación con la respuesta del endpoint `/diagnostico/lista_ip`:
+- Filas en API con `fecha_termino` ∈ [2025-09-01, 2025-09-12]: **0** (esperábamos ~41 para ECO 2025 SIMCo)
+- Filas en API con `fecha_termino` ∈ [2025-09-01, 2025-09-08]: **0** (esperábamos ~52 para CONCEPTS)
+- Filas en API con `fecha_termino` ∈ [2024-11-01, 2024-11-04]: **0** (esperábamos 91 para 2024(2))
+
+**Conclusión:** `/diagnostico/lista_ip` expone Índice de Potencial, NO Clima Organizacional. Las 3 encuestas ECO que ve el CEO en la UI no están disponibles en el API público.
+
+**Solicitudes:**
+
+1. **¿Cuál es el endpoint REST para resultados de encuestas ECO?** Necesitamos:
+   - Listar las encuestas registradas (id, título, tipo, periodo, participantes, avance, estatus)
+   - Score global por encuesta
+   - Breakdown por dimensión (liderazgo, ambiente, comunicación, etc.) si existe
+   - Distribución de respuestas
+   - Idealmente: respuestas individuales agregadas (sin PII) para correlaciones
+
+2. **Si NO hay endpoint para encuestas ECO:** ¿pueden agregar uno equivalente a las pantallas de `/diagnostico_clima_organizacional/*`?
+
+3. **Plan B viable mientras tanto:** webhook al cierre de cada encuesta que empuje resultados agregados a un endpoint nuestro, o export programado en CSV.
+
+**Aclaración adicional sobre `/diagnostico/lista_ip` (que SÍ sirve para Índice de Potencial):**
+
+- Escala del campo `ip`: vemos rango 0-100. ¿Es 0-100 oficialmente?
+- Wrapper devuelve `total: 3, enviados: 3` (no sabemos a qué se refiere — ¿total de IPs registrados? ¿total de diagnósticos? Confirmar).
 
 ---
 

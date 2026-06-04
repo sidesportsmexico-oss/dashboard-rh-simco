@@ -27,37 +27,22 @@ async function EcoKpi() {
     const resp = await getEcoResultados();
     const encuestas = compararEncuestas(resp.data ?? []);
     const ecoSimco = encuestas.find((e) => e.def.id === "eco_2025_simco");
-    const eco24 = encuestas.find((e) => e.def.id === "eco_2024_2");
     return (
       <KpiCard
-        label="ECO 2025 SIMCO"
+        label="IP Corporativo 2025"
         value={
           ecoSimco?.promedioIp != null
             ? ecoSimco.promedioIp.toFixed(1)
             : "—"
         }
-        hint={
-          eco24?.promedioIp != null
-            ? `vs ECO 2024: ${eco24.promedioIp.toFixed(1)}`
-            : "Sin base histórica"
-        }
-        trend={
-          eco24?.promedioIp != null && ecoSimco?.promedioIp != null
-            ? {
-                delta: Number(
-                  (ecoSimco.promedioIp - eco24.promedioIp).toFixed(1),
-                ),
-              }
-            : undefined
-        }
+        hint="Índice de Potencial · ECO pendiente"
         icon={<ClipboardList className="h-4 w-4" />}
-        tone="teal"
       />
     );
   } catch {
     return (
       <KpiCard
-        label="ECO 2025 SIMCO"
+        label="IP Corporativo 2025"
         value="—"
         hint="Error al cargar"
         tone="warning"
