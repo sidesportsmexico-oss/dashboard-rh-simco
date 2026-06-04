@@ -7,9 +7,42 @@ interface KpiCardProps {
   hint?: string;
   trend?: { delta: number; suffix?: string };
   icon?: ReactNode;
-  tone?: "default" | "success" | "warning" | "danger";
+  tone?: "default" | "teal" | "blue" | "warning" | "danger" | "success";
   className?: string;
 }
+
+const TONES = {
+  default: {
+    border: "border-[var(--color-border)]",
+    accent: "text-[var(--color-text-dim)]",
+    glow: "",
+  },
+  teal: {
+    border: "border-[var(--color-accent-teal)]/30",
+    accent: "text-[var(--color-accent-teal)]",
+    glow: "shadow-[0_0_24px_-12px_var(--color-accent-teal)]",
+  },
+  blue: {
+    border: "border-[var(--color-accent-blue)]/30",
+    accent: "text-[var(--color-accent-blue)]",
+    glow: "shadow-[0_0_24px_-12px_var(--color-accent-blue)]",
+  },
+  success: {
+    border: "border-[var(--color-accent-teal)]/30",
+    accent: "text-[var(--color-accent-teal)]",
+    glow: "shadow-[0_0_24px_-12px_var(--color-accent-teal)]",
+  },
+  warning: {
+    border: "border-[var(--color-accent-orange)]/35",
+    accent: "text-[var(--color-accent-orange)]",
+    glow: "shadow-[0_0_24px_-12px_var(--color-accent-orange)]",
+  },
+  danger: {
+    border: "border-[var(--color-accent-red)]/35",
+    accent: "text-[var(--color-accent-red)]",
+    glow: "shadow-[0_0_24px_-12px_var(--color-accent-red)]",
+  },
+} as const;
 
 export function KpiCard({
   label,
@@ -20,45 +53,47 @@ export function KpiCard({
   tone = "default",
   className,
 }: KpiCardProps) {
-  const toneClasses = {
-    default: "border-zinc-200 dark:border-zinc-800",
-    success: "border-emerald-200 dark:border-emerald-900",
-    warning: "border-amber-200 dark:border-amber-900",
-    danger: "border-red-200 dark:border-red-900",
-  }[tone];
+  const t = TONES[tone];
 
   return (
     <div
       className={cn(
-        "rounded-xl border bg-white dark:bg-zinc-950 p-5 flex flex-col gap-3",
-        toneClasses,
+        "group relative rounded-xl border bg-[var(--color-bg-card)] p-5 flex flex-col gap-3 transition-all",
+        "hover:bg-[var(--color-bg-elevated)]",
+        t.border,
+        t.glow,
         className,
       )}
     >
       <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+        <p className="text-[11px] font-medium text-[var(--color-text-muted)] uppercase tracking-[0.12em]">
           {label}
         </p>
-        {icon && (
-          <span className="text-zinc-400 dark:text-zinc-600">{icon}</span>
-        )}
+        {icon && <span className={cn("transition-colors", t.accent)}>{icon}</span>}
       </div>
-      <p className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+
+      <p
+        className={cn(
+          "text-3xl font-semibold tracking-tight tabular-nums",
+          "text-[var(--color-text)]",
+        )}
+      >
         {typeof value === "number" ? formatNumber(value) : (value ?? "—")}
       </p>
-      <div className="flex items-center justify-between text-xs">
+
+      <div className="flex items-center justify-between text-xs gap-2">
         {hint && (
-          <span className="text-zinc-500 dark:text-zinc-400">{hint}</span>
+          <span className="text-[var(--color-text-dim)] truncate">{hint}</span>
         )}
         {trend && (
           <span
             className={cn(
-              "font-medium",
+              "font-medium tabular-nums",
               trend.delta > 0
-                ? "text-emerald-600 dark:text-emerald-400"
+                ? "text-[var(--color-accent-teal)]"
                 : trend.delta < 0
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-zinc-500",
+                  ? "text-[var(--color-accent-red)]"
+                  : "text-[var(--color-text-dim)]",
             )}
           >
             {trend.delta > 0 ? "+" : ""}

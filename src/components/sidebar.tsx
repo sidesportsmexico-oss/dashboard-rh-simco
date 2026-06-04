@@ -24,26 +24,21 @@ const NAV: NavItem[] = [
   { href: "/reclutamiento", label: "Reclutamiento", icon: Briefcase },
   { href: "/headcount", label: "Head Count", icon: Users },
   { href: "/eco", label: "ECO", icon: ClipboardList },
-  {
-    href: "/evaluacion-360",
-    label: "Evaluación 360",
-    icon: Target,
-    badge: "Pendiente API",
-  },
+  { href: "/evaluacion-360", label: "Evaluación 360", icon: Target },
 ];
 
-export function Sidebar() {
+export function Sidebar({ logo }: { logo: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-      <div className="flex flex-col flex-1 min-h-0 px-4 py-6">
-        <div className="mb-8 px-2">
-          <h1 className="text-lg font-semibold tracking-tight">SIMCO · RH</h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Vista ejecutiva — CEO
-          </p>
-        </div>
+    <aside
+      className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30
+                 border-r border-[var(--color-border-subtle)]
+                 bg-[var(--color-bg-card)]/70 backdrop-blur-xl"
+    >
+      <div className="flex flex-col flex-1 min-h-0 px-5 py-6">
+        <div className="mb-10">{logo}</div>
+
         <nav className="flex-1 space-y-1">
           {NAV.map((item) => {
             const isActive =
@@ -56,18 +51,28 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "group relative flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-50",
+                    ? "bg-[var(--color-bg-elevated)] text-[var(--color-text)]"
+                    : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)]/50 hover:text-[var(--color-text)]",
                 )}
               >
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--color-accent-teal)]" />
+                )}
                 <span className="flex items-center gap-3">
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 shrink-0 transition-colors",
+                      isActive
+                        ? "text-[var(--color-accent-teal)]"
+                        : "text-[var(--color-text-dim)] group-hover:text-[var(--color-text-muted)]",
+                    )}
+                  />
                   {item.label}
                 </span>
                 {item.badge && (
-                  <span className="text-[10px] uppercase tracking-wider rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5">
+                  <span className="text-[9px] uppercase tracking-wider rounded-full bg-[var(--color-accent-orange)]/15 text-[var(--color-accent-orange)] px-2 py-0.5 font-semibold">
                     {item.badge}
                   </span>
                 )}
@@ -75,8 +80,15 @@ export function Sidebar() {
             );
           })}
         </nav>
-        <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 mt-4">
-          <p className="text-[11px] text-zinc-400 px-2">
+
+        <div className="pt-5 mt-5 border-t border-[var(--color-border-subtle)] space-y-2">
+          <div className="flex items-center gap-2 px-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent-teal)] animate-pulse" />
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-dim)]">
+              Conectado
+            </p>
+          </div>
+          <p className="text-[10px] text-[var(--color-text-dim)] px-2">
             Fuente: Potentor API · v1
           </p>
         </div>

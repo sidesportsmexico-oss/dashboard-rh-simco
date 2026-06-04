@@ -3,6 +3,7 @@ import { Briefcase, Users, ClipboardList, Target } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
+import { PageHeader } from "@/components/page-header";
 import {
   getVacantes,
   resumenVacantes,
@@ -18,6 +19,8 @@ import {
   resumirEcoPorAnio,
 } from "@/lib/potentor/diagnostico";
 import { FunnelChart } from "@/components/funnel-chart";
+
+export const revalidate = 600;
 
 async function EcoKpi() {
   try {
@@ -42,6 +45,7 @@ async function EcoKpi() {
             : undefined
         }
         icon={<ClipboardList className="h-4 w-4" />}
+        tone="teal"
       />
     );
   } catch {
@@ -57,10 +61,7 @@ async function EcoKpi() {
   }
 }
 
-export const revalidate = 600;
-
 async function OverviewContent() {
-  // Disparamos los 3 en paralelo para no acumular latencia.
   const [vacantesRes, headcountRes, empresaRes] = await Promise.allSettled([
     getVacantes(),
     getHeadcountReporte(),
@@ -71,8 +72,6 @@ async function OverviewContent() {
     vacantesRes.status === "fulfilled" ? vacantesRes.value : [];
   const headcount =
     headcountRes.status === "fulfilled" ? headcountRes.value : [];
-  const empresa =
-    empresaRes.status === "fulfilled" ? empresaRes.value : null;
 
   const vacResumen = resumenVacantes(vacantes);
   const hcResumen = resumenHeadcount(headcount);
@@ -86,12 +85,11 @@ async function OverviewContent() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          SIMCO — vista ejecutiva de Recursos Humanos
-        </p>
-      </div>
+      <PageHeader
+        title="Overview"
+        subtitle="Vista ejecutiva de Recursos Humanos · SIMCO"
+        tags={["Vista CEO", "Potentor API"]}
+      />
 
       {errors.map((e, i) => (
         <ErrorBanner
@@ -107,6 +105,7 @@ async function OverviewContent() {
           value={hcResumen.total}
           hint="Plantilla actual"
           icon={<Users className="h-4 w-4" />}
+          tone="teal"
         />
         <KpiCard
           label="Vacantes abiertas"
@@ -119,9 +118,9 @@ async function OverviewContent() {
           <EcoKpi />
         </Suspense>
         <KpiCard
-          label="Evaluación 360 2026"
+          label="Evaluación 360"
           value="—"
-          hint="Pendiente endpoint API"
+          hint="Pendiente prod data"
           icon={<Target className="h-4 w-4" />}
         />
       </div>
@@ -145,16 +144,20 @@ async function OverviewContent() {
               .map(([sucursal, count]) => (
                 <li
                   key={sucursal}
-                  className="flex items-center justify-between text-sm py-1.5 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+                  className="flex items-center justify-between text-sm py-2 border-b border-[var(--color-border-subtle)] last:border-0"
                 >
-                  <span className="text-zinc-700 dark:text-zinc-300">
+                  <span className="text-[var(--color-text-muted)] truncate">
                     {sucursal}
                   </span>
-                  <span className="font-medium tabular-nums">{count}</span>
+                  <span className="font-medium tabular-nums text-[var(--color-text)]">
+                    {count}
+                  </span>
                 </li>
               ))}
             {vacResumen.porSucursal.size === 0 && (
-              <li className="text-sm text-zinc-500">Sin datos</li>
+              <li className="text-sm text-[var(--color-text-dim)]">
+                Sin datos
+              </li>
             )}
           </ul>
         </SectionCard>
@@ -174,12 +177,12 @@ export default function Page() {
 function OverviewSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
-      <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded" />
+      <div className="h-9 w-48 bg-[var(--color-bg-elevated)] rounded" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-32 rounded-xl bg-zinc-200 dark:bg-zinc-800"
+            className="h-32 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)]"
           />
         ))}
       </div>

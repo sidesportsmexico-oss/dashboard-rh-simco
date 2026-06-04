@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
+import { SimcoLogo } from "@/components/simco-logo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard RH · CEO",
-  description: "Dashboard ejecutivo de Recursos Humanos",
+  title: "SIMCO · Dashboard RH",
+  description: "Dashboard ejecutivo de Recursos Humanos · SIMCO",
 };
 
 export default function RootLayout({
@@ -28,10 +29,10 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50">
-        <Sidebar />
+      <body className="min-h-full text-[var(--color-text)]">
+        <Sidebar logo={<SimcoLogo />} />
         <main className="md:pl-64">
-          <div className="px-6 py-8 max-w-7xl mx-auto">{children}</div>
+          <div className="px-6 md:px-10 py-8 max-w-7xl mx-auto">{children}</div>
         </main>
       </body>
     </html>

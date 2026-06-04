@@ -3,6 +3,7 @@ import { ClipboardList, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
+import { PageHeader } from "@/components/page-header";
 import {
   getEcoResultados,
   resumirEcoPorAnio,
@@ -15,31 +16,6 @@ export const revalidate = 600;
 
 const YEAR_A = 2025;
 const YEAR_B = 2026;
-
-function DeltaPill({ delta, suffix = "" }: { delta: number | null; suffix?: string }) {
-  if (delta === null) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-        <Minus className="h-3 w-3" /> Sin datos
-      </span>
-    );
-  }
-  const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
-  const color =
-    delta > 0
-      ? "text-emerald-600 dark:text-emerald-400"
-      : delta < 0
-        ? "text-red-600 dark:text-red-400"
-        : "text-zinc-500";
-  return (
-    <span className={cn("inline-flex items-center gap-1 text-xs font-medium", color)}>
-      <Icon className="h-3 w-3" />
-      {delta > 0 ? "+" : ""}
-      {delta.toFixed(1)}
-      {suffix}
-    </span>
-  );
-}
 
 async function Content() {
   let resp;
@@ -62,17 +38,15 @@ async function Content() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          ECO — Encuesta de Clima Organizacional
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Diagnóstico de Clima ·{" "}
-          {yearsDisponibles.length > 0
+      <PageHeader
+        title="ECO — Encuesta de Clima Organizacional"
+        subtitle={
+          yearsDisponibles.length > 0
             ? `Años disponibles: ${yearsDisponibles.join(", ")}`
-            : "Sin datos"}
-        </p>
-      </div>
+            : "Sin datos"
+        }
+        tags={["Vista CEO", "Diagnóstico de Clima"]}
+      />
 
       {yearsDisponibles.length === 0 && (
         <ErrorBanner
@@ -83,15 +57,17 @@ async function Content() {
 
       {/* Comparativo grande 2025 vs 2026 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <YearCard year={YEAR_A} resumen={comp.a} />
-        <YearCard year={YEAR_B} resumen={comp.b} />
+        <YearCard year={YEAR_A} resumen={comp.a} tone="muted" />
+        <YearCard year={YEAR_B} resumen={comp.b} tone="primary" />
       </div>
 
       {/* Deltas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KpiCard
           label={`Δ Score promedio (${YEAR_B} vs ${YEAR_A})`}
-          value={comp.deltaPromedio !== null ? comp.deltaPromedio.toFixed(1) : "—"}
+          value={
+            comp.deltaPromedio !== null ? comp.deltaPromedio.toFixed(1) : "—"
+          }
           hint={
             comp.a?.promedioIp != null && comp.b?.promedioIp != null
               ? `${comp.a.promedioIp.toFixed(1)} → ${comp.b.promedioIp.toFixed(1)}`
@@ -131,7 +107,7 @@ async function Content() {
         />
       </div>
 
-      {/* Desgloses por sucursal y área del año más reciente */}
+      {/* Desgloses */}
       {comp.b && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BreakdownCard
@@ -150,51 +126,98 @@ async function Content() {
   );
 }
 
-function YearCard({ year, resumen }: { year: number; resumen: EcoResumenAnio | null }) {
+function YearCard({
+  year,
+  resumen,
+  tone,
+}: {
+  year: number;
+  resumen: EcoResumenAnio | null;
+  tone: "primary" | "muted";
+}) {
+  const borderClass =
+    tone === "primary"
+      ? "border-[var(--color-accent-teal)]/30 shadow-[0_0_36px_-18px_var(--color-accent-teal)]"
+      : "border-[var(--color-border)]";
+
+  const labelColor =
+    tone === "primary"
+      ? "text-[var(--color-accent-teal)]"
+      : "text-[var(--color-text-muted)]";
+
   if (!resumen) {
     return (
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-500 uppercase tracking-wider">
+      <div
+        className={cn(
+          "rounded-2xl border bg-[var(--color-bg-card)] p-8 flex flex-col gap-2",
+          borderClass,
+        )}
+      >
+        <span
+          className={cn(
+            "text-[11px] font-medium uppercase tracking-[0.18em]",
+            labelColor,
+          )}
+        >
           ECO {year}
         </span>
-        <p className="text-3xl font-semibold text-zinc-400">Sin datos</p>
-        <p className="text-xs text-zinc-500">
+        <p className="text-3xl font-semibold text-[var(--color-text-dim)]">
+          Sin datos
+        </p>
+        <p className="text-xs text-[var(--color-text-dim)]">
           No hay encuestas con fecha_termino en {year}
         </p>
       </div>
     );
   }
   return (
-    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 flex flex-col gap-4">
+    <div
+      className={cn(
+        "rounded-2xl border bg-[var(--color-bg-card)] p-8 flex flex-col gap-4",
+        borderClass,
+      )}
+    >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+        <span
+          className={cn(
+            "text-[11px] font-medium uppercase tracking-[0.18em]",
+            labelColor,
+          )}
+        >
           ECO {year}
         </span>
-        <ClipboardList className="h-5 w-5 text-zinc-400" />
+        <ClipboardList
+          className={cn(
+            "h-5 w-5",
+            tone === "primary"
+              ? "text-[var(--color-accent-teal)]"
+              : "text-[var(--color-text-dim)]",
+          )}
+        />
       </div>
       <div className="flex items-baseline gap-2">
-        <p className="text-6xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 tabular-nums">
+        <p className="text-6xl font-semibold tracking-tight tabular-nums text-[var(--color-text)]">
           {resumen.promedioIp !== null ? resumen.promedioIp.toFixed(1) : "—"}
         </p>
-        <p className="text-sm text-zinc-500">/ 100</p>
+        <p className="text-sm text-[var(--color-text-dim)]">/ 100</p>
       </div>
-      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-[var(--color-border-subtle)]">
         <div>
-          <p className="text-xs text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] text-[var(--color-text-dim)] uppercase tracking-wider">
             Respondieron
           </p>
-          <p className="text-lg font-medium tabular-nums">
+          <p className="text-lg font-medium tabular-nums text-[var(--color-text)]">
             {resumen.respondieron}{" "}
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-[var(--color-text-dim)]">
               / {resumen.totalInvitados}
             </span>
           </p>
         </div>
         <div>
-          <p className="text-xs text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] text-[var(--color-text-dim)] uppercase tracking-wider">
             Tasa respuesta
           </p>
-          <p className="text-lg font-medium tabular-nums">
+          <p className="text-lg font-medium tabular-nums text-[var(--color-text)]">
             {formatPercent(resumen.tasaRespuesta * 100)}
           </p>
         </div>
@@ -218,22 +241,24 @@ function BreakdownCard({
   return (
     <SectionCard title={title} description={description}>
       {sorted.length === 0 ? (
-        <p className="text-sm text-zinc-500">Sin respuestas con score &gt; 0</p>
+        <p className="text-sm text-[var(--color-text-dim)]">
+          Sin respuestas con score &gt; 0
+        </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {sorted.map(([name, stats]) => (
             <li
               key={name}
-              className="flex items-center justify-between text-sm py-1.5 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+              className="flex items-center justify-between text-sm py-2 border-b border-[var(--color-border-subtle)] last:border-0"
             >
-              <span className="text-zinc-700 dark:text-zinc-300 truncate">
+              <span className="text-[var(--color-text-muted)] truncate pr-3">
                 {name}
               </span>
-              <span className="flex items-center gap-3">
-                <span className="text-xs text-zinc-500 tabular-nums">
+              <span className="flex items-center gap-3 shrink-0">
+                <span className="text-[10px] text-[var(--color-text-dim)] tabular-nums">
                   n={stats.n}
                 </span>
-                <span className="font-medium tabular-nums">
+                <span className="font-medium tabular-nums text-[var(--color-text)]">
                   {stats.promedio.toFixed(1)}
                 </span>
               </span>
@@ -247,7 +272,11 @@ function BreakdownCard({
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="text-sm text-zinc-500">Cargando…</div>}>
+    <Suspense
+      fallback={
+        <div className="text-sm text-[var(--color-text-dim)]">Cargando…</div>
+      }
+    >
       <Content />
     </Suspense>
   );

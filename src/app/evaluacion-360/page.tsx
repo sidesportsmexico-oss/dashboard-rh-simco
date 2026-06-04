@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Target, AlertTriangle } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { SectionCard } from "@/components/section-card";
+import { PageHeader } from "@/components/page-header";
 import {
   getComparativoDesempeno,
   resumenProcesos,
@@ -28,27 +29,25 @@ async function Content() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Evaluación 360
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Comparativo 2025 vs 2026 — fuente: <code>/desempeno/working_process_by_date</code>
-        </p>
-      </div>
+      <PageHeader
+        title="Evaluación 360"
+        subtitle="Comparativo 2025 vs 2026 · /desempeno/working_process_by_date"
+        tags={["Vista CEO", "Provisional"]}
+      />
 
-      <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-4 flex gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      <div className="rounded-xl border border-[var(--color-accent-orange)]/30 bg-[var(--color-accent-orange)]/5 p-4 flex gap-3">
+        <AlertTriangle className="h-5 w-5 text-[var(--color-accent-orange)] shrink-0 mt-0.5" />
         <div className="text-sm">
-          <p className="font-medium text-amber-900 dark:text-amber-200">
+          <p className="font-medium text-[var(--color-accent-orange-warm)]">
             Endpoint provisional — pendiente confirmar con Potentor
           </p>
-          <p className="text-amber-800 dark:text-amber-300 mt-1">
-            La spec de Potentor no expone un endpoint llamado &quot;360&quot;.
-            Estamos usando <code>/desempeno/working_process_by_date</code>,
-            que es el único endpoint con parámetro <code>year</code>. Esto puede
-            traer procesos de desempeño en general, no solo 360. Pendiente
-            confirmación.
+          <p className="text-[var(--color-text-muted)] mt-1">
+            La spec no expone un endpoint llamado &quot;360&quot;. Usamos{" "}
+            <code className="text-[var(--color-accent-teal)]">
+              /desempeno/working_process_by_date
+            </code>{" "}
+            (único endpoint con parámetro <code>year</code>). Puede traer todos
+            los procesos de desempeño, no solo 360.
           </p>
         </div>
       </div>
@@ -64,7 +63,7 @@ async function Content() {
           label="Procesos 2026"
           value={r26.total}
           hint={err2026 ? "Error al cargar" : `${r26.colaboradores} colaboradores`}
-          tone={err2026 ? "danger" : "default"}
+          tone={err2026 ? "danger" : "teal"}
           icon={<Target className="h-4 w-4" />}
         />
         <KpiCard
@@ -90,18 +89,26 @@ async function Content() {
           description={err2025 ?? `${procs2025.length} encontrados`}
         >
           {err2025 ? (
-            <p className="text-xs text-red-600 font-mono">{err2025}</p>
+            <p className="text-xs text-[var(--color-accent-red)] font-mono break-all">
+              {err2025}
+            </p>
           ) : procs2025.length === 0 ? (
-            <p className="text-sm text-zinc-500">Sin procesos registrados</p>
+            <p className="text-sm text-[var(--color-text-dim)]">
+              Sin procesos registrados
+            </p>
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-1">
               {procs2025.slice(0, 10).map((p, i) => (
                 <li
                   key={i}
-                  className="flex justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+                  className="flex justify-between py-2 text-sm border-b border-[var(--color-border-subtle)] last:border-0"
                 >
-                  <span>{p.nombre ?? `Proceso ${p.proceso_id ?? i}`}</span>
-                  <span className="text-zinc-500">{p.estatus ?? "—"}</span>
+                  <span className="text-[var(--color-text)]">
+                    {p.nombre ?? `Proceso ${p.proceso_id ?? i}`}
+                  </span>
+                  <span className="text-[var(--color-text-dim)]">
+                    {p.estatus ?? "—"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -113,18 +120,26 @@ async function Content() {
           description={err2026 ?? `${procs2026.length} encontrados`}
         >
           {err2026 ? (
-            <p className="text-xs text-red-600 font-mono">{err2026}</p>
+            <p className="text-xs text-[var(--color-accent-red)] font-mono break-all">
+              {err2026}
+            </p>
           ) : procs2026.length === 0 ? (
-            <p className="text-sm text-zinc-500">Sin procesos registrados</p>
+            <p className="text-sm text-[var(--color-text-dim)]">
+              Sin procesos registrados
+            </p>
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-1">
               {procs2026.slice(0, 10).map((p, i) => (
                 <li
                   key={i}
-                  className="flex justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+                  className="flex justify-between py-2 text-sm border-b border-[var(--color-border-subtle)] last:border-0"
                 >
-                  <span>{p.nombre ?? `Proceso ${p.proceso_id ?? i}`}</span>
-                  <span className="text-zinc-500">{p.estatus ?? "—"}</span>
+                  <span className="text-[var(--color-text)]">
+                    {p.nombre ?? `Proceso ${p.proceso_id ?? i}`}
+                  </span>
+                  <span className="text-[var(--color-text-dim)]">
+                    {p.estatus ?? "—"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -137,7 +152,11 @@ async function Content() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="text-sm text-zinc-500">Cargando…</div>}>
+    <Suspense
+      fallback={
+        <div className="text-sm text-[var(--color-text-dim)]">Cargando…</div>
+      }
+    >
       <Content />
     </Suspense>
   );

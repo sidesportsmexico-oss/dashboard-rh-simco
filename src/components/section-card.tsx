@@ -19,15 +19,18 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        "rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6",
+        "rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6",
+        "transition-all hover:border-[var(--color-border)]/80",
         className,
       )}
     >
-      <header className="flex items-start justify-between mb-4">
+      <header className="flex items-start justify-between mb-5">
         <div>
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-[var(--color-text)]">
+            {title}
+          </h2>
           {description && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            <p className="text-xs text-[var(--color-text-dim)] mt-1">
               {description}
             </p>
           )}
