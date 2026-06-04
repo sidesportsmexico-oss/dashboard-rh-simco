@@ -165,3 +165,168 @@ export function compararEco(
       a && b ? b.tasaRespuesta - a.tasaRespuesta : null,
   };
 }
+
+// ============ Helpers para gráficas ============
+
+const MONTHS_SHORT = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
+
+export type MonthlyTrendPoint = {
+  month: string;
+  monthIdx: number;
+  yearA: number | null;
+  yearB: number | null;
+  nA: number;
+  nB: number;
+};
+
+/**
+ * Tendencia mensual de IP por año. Devuelve los 12 meses (1-12) con el
+ * promedio de IP de yearA y yearB en cada uno. null cuando no hay respuestas.
+ */
+export function buildTendenciaMensual(
+  rows: IPRow[],
+  yearA: number,
+  yearB: number,
+): MonthlyTrendPoint[] {
+  const acc = new Map<
+    string,
+    { suma: number; n: number }
+  >();
+  for (const r of rows) {
+    const ft = r.fecha_termino ?? "";
+    if (ft.length < 7) continue;
+    const ip = Number(r.ip);
+    if (!Number.isFinite(ip) || ip <= 0) continue;
+    const y = Number(ft.slice(0, 4));
+    const m = Number(ft.slice(5, 7));
+    if (y !== yearA && y !== yearB) continue;
+    const key = `${y}-${m}`;
+    const cur = acc.get(key) ?? { suma: 0, n: 0 };
+    cur.suma += ip;
+    cur.n += 1;
+    acc.set(key, cur);
+  }
+  const out: MonthlyTrendPoint[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const a = acc.get(`${yearA}-${m}`);
+    const b = acc.get(`${yearB}-${m}`);
+    out.push({
+      month: MONTHS_SHORT[m - 1],
+      monthIdx: m,
+      yearA: a ? a.suma / a.n : null,
+      yearB: b ? b.suma / b.n : null,
+      nA: a?.n ?? 0,
+      nB: b?.n ?? 0,
+    });
+  }
+  return out;
+}
+
+export type AreaComparison = {
+  area: string;
+  yearA: number | null;
+  yearB: number | null;
+  nA: number;
+  nB: number;
+  delta: number | null;
+};
+
+/**
+ * Score promedio por área en cada año. Solo devuelve áreas que tienen al
+ * menos una respuesta en alguno de los dos años. Ordenado por delta desc.
+ */
+export function buildComparativoPorArea(
+  rows: IPRow[],
+  yearA: number,
+  yearB: number,
+): AreaComparison[] {
+  const acc = new Map<
+    string,
+    {
+      sumA: number;
+      nA: number;
+      sumB: number;
+      nB: number;
+    }
+  >();
+  for (const r of rows) {
+    const ft = r.fecha_termino ?? "";
+    if (ft.length < 4) continue;
+    const ip = Number(r.ip);
+    if (!Number.isFinite(ip) || ip <= 0) continue;
+    const y = Number(ft.slice(0, 4));
+    if (y !== yearA && y !== yearB) continue;
+    const area = r.area?.trim() || "Sin área";
+    const cur = acc.get(area) ?? { sumA: 0, nA: 0, sumB: 0, nB: 0 };
+    if (y === yearA) {
+      cur.sumA += ip;
+      cur.nA += 1;
+    } else {
+      cur.sumB += ip;
+      cur.nB += 1;
+    }
+    acc.set(area, cur);
+  }
+  const out: AreaComparison[] = [];
+  for (const [area, s] of acc) {
+    const a = s.nA > 0 ? s.sumA / s.nA : null;
+    const b = s.nB > 0 ? s.sumB / s.nB : null;
+    out.push({
+      area,
+      yearA: a,
+      yearB: b,
+      nA: s.nA,
+      nB: s.nB,
+      delta: a !== null && b !== null ? b - a : null,
+    });
+  }
+  return out.sort((x, y) => (y.delta ?? -Infinity) - (x.delta ?? -Infinity));
+}
+
+export type DistribucionBucket = {
+  range: string;
+  yearA: number;
+  yearB: number;
+};
+
+/**
+ * Distribución de scores en buckets de 10 puntos (0-10, 10-20, ..., 90-100).
+ * Sirve para comparar cómo se polarizan las respuestas año vs año.
+ */
+export function buildDistribucionScores(
+  rows: IPRow[],
+  yearA: number,
+  yearB: number,
+): DistribucionBucket[] {
+  const a = new Array(10).fill(0);
+  const b = new Array(10).fill(0);
+  for (const r of rows) {
+    const ft = r.fecha_termino ?? "";
+    if (ft.length < 4) continue;
+    const ip = Number(r.ip);
+    if (!Number.isFinite(ip) || ip <= 0) continue;
+    const y = Number(ft.slice(0, 4));
+    if (y !== yearA && y !== yearB) continue;
+    const bucket = Math.min(Math.floor(ip / 10), 9);
+    if (y === yearA) a[bucket]++;
+    else b[bucket]++;
+  }
+  return Array.from({ length: 10 }, (_, i) => ({
+    range: `${i * 10}-${(i + 1) * 10}`,
+    yearA: a[i],
+    yearB: b[i],
+  }));
+}

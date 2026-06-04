@@ -1,13 +1,22 @@
 import { Suspense } from "react";
-import { ClipboardList, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
 import { PageHeader } from "@/components/page-header";
 import {
+  EcoTendenciaMensualChart,
+  EcoAreaComparisonChart,
+  EcoDistribucionChart,
+  EcoDeltaAreaChart,
+} from "@/components/eco-charts";
+import {
   getEcoResultados,
   resumirEcoPorAnio,
   compararEco,
+  buildTendenciaMensual,
+  buildComparativoPorArea,
+  buildDistribucionScores,
   type EcoResumenAnio,
 } from "@/lib/potentor/diagnostico";
 import { cn, formatPercent } from "@/lib/utils";
@@ -35,6 +44,11 @@ async function Content() {
   const comp = compararEco(resumenPorAnio, YEAR_A, YEAR_B);
 
   const yearsDisponibles = [...resumenPorAnio.keys()].sort();
+
+  // Datos para gráficas comparativas
+  const tendenciaMensual = buildTendenciaMensual(rows, YEAR_A, YEAR_B);
+  const comparativoArea = buildComparativoPorArea(rows, YEAR_A, YEAR_B);
+  const distribucion = buildDistribucionScores(rows, YEAR_A, YEAR_B);
 
   return (
     <div className="space-y-8">
@@ -107,7 +121,51 @@ async function Content() {
         />
       </div>
 
-      {/* Desgloses */}
+      {/* GRÁFICAS COMPARATIVAS 2025 vs 2026 */}
+
+      <SectionCard
+        title={`Tendencia mensual · ${YEAR_A} vs ${YEAR_B}`}
+        description="Score promedio por mes de aplicación de la encuesta"
+      >
+        <EcoTendenciaMensualChart
+          data={tendenciaMensual}
+          yearA={YEAR_A}
+          yearB={YEAR_B}
+        />
+      </SectionCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SectionCard
+          title="Distribución de scores"
+          description="Cuántas personas respondieron en cada rango (0-100)"
+        >
+          <EcoDistribucionChart
+            data={distribucion}
+            yearA={YEAR_A}
+            yearB={YEAR_B}
+          />
+        </SectionCard>
+
+        <SectionCard
+          title="Cambio por área"
+          description={`Δ ${YEAR_B} vs ${YEAR_A} (verde = mejoró, rojo = empeoró)`}
+        >
+          <EcoDeltaAreaChart data={comparativoArea} />
+        </SectionCard>
+      </div>
+
+      <SectionCard
+        title="Score promedio por área"
+        description={`Comparativo lado a lado ${YEAR_A} vs ${YEAR_B}`}
+      >
+        <EcoAreaComparisonChart
+          data={comparativoArea}
+          yearA={YEAR_A}
+          yearB={YEAR_B}
+        />
+      </SectionCard>
+
+      {/* Desgloses tabulares originales */}
       {comp.b && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BreakdownCard
