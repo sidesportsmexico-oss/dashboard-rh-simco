@@ -1,13 +1,22 @@
-import { potentorFetch, POTENTOR_DEFAULTS } from "./client";
+import { potentorFetch, POTENTOR_DEFAULTS, isSimcoRow } from "./client";
 import type { Vacante, VacanteEtapa, Candidato } from "./types";
 
 /**
- * Catálogo de vacantes (todas las visibles para la cuenta).
- * Endpoint: GET /reclutamiento/lista
+ * Catálogo de vacantes de SIMCO.
+ * Endpoint: GET /reclutamiento/lista (company-wide — incluye Fleet/Lexium,
+ * filtramos a SIMCO con `isSimcoRow`).
  */
 export async function getVacantes(): Promise<Vacante[]> {
-  return potentorFetch<Vacante[]>("/reclutamiento/lista", {
+  const all = await potentorFetch<Vacante[]>("/reclutamiento/lista", {
     tags: ["reclutamiento", "vacantes"],
+  });
+  return all.filter(isSimcoRow);
+}
+
+/** Versión sin filtro — útil para debugging o si en el futuro queremos comparar empresas. */
+export async function getVacantesTodas(): Promise<Vacante[]> {
+  return potentorFetch<Vacante[]>("/reclutamiento/lista", {
+    tags: ["reclutamiento", "vacantes", "todas"],
   });
 }
 

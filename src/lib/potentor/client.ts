@@ -132,3 +132,49 @@ export const POTENTOR_DEFAULTS = {
   sucursal: process.env.POTENTOR_DEFAULT_SUCURSAL,
   potentor_id: process.env.POTENTOR_POTENTOR_ID,
 };
+
+/**
+ * IDs de sucursal que pertenecen a SIMCO. La cuenta de Potentor incluye
+ * otras empresas (Fleet, Lexium, etc.), pero el dashboard solo debe
+ * mostrar SIMCO. Algunos endpoints son company-wide (/reclutamiento/lista,
+ * /diagnostico/lista_ip) y traen TODOS — los filtramos client-side con
+ * este conjunto.
+ *
+ * Configurable vía env `POTENTOR_SIMCO_SUCURSAL_IDS` (comma-separated).
+ * Si no está, usa POTENTOR_DEFAULT_SUCURSAL como único ID.
+ */
+function loadSimcoSucursalIds(): Set<string> {
+  const raw =
+    process.env.POTENTOR_SIMCO_SUCURSAL_IDS ??
+    process.env.POTENTOR_DEFAULT_SUCURSAL ??
+    "";
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+export const SIMCO_SUCURSAL_IDS = loadSimcoSucursalIds();
+
+/**
+ * Devuelve true si la fila pertenece a una sucursal de SIMCO.
+ * La fila puede usar el field `sucursal_id` (reclutamiento) o no traer ID
+ * (algunos endpoints solo mandan el nombre); en ese caso comparamos por
+ * nombre case-insensitive contra el ID conocido `simco`.
+ */
+export function isSimcoRow(row: {
+  sucursal_id?: string | number | null;
+  sucursal?: string | null;
+}): boolean {
+  if (SIMCO_SUCURSAL_IDS.size === 0) return true; // sin filtro = passthrough
+  if (row.sucursal_id != null) {
+    return SIMCO_SUCURSAL_IDS.has(String(row.sucursal_id));
+  }
+  // Fallback por nombre (case insensitive, ignora typos de mayúsculas tipo "SIMCo")
+  if (row.sucursal) {
+    return /\bsimco\b/i.test(row.sucursal);
+  }
+  return false;
+}

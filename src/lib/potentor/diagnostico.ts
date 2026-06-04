@@ -1,4 +1,4 @@
-import { potentorFetch } from "./client";
+import { potentorFetch, isSimcoRow } from "./client";
 
 /**
  * Endpoint de "Diagnóstico de Clima Organizacional" en Potentor.
@@ -40,18 +40,29 @@ export interface ListaIPResponse {
   enviados: string | number;
 }
 
-/** GET /diagnostico/lista_ip */
+/**
+ * GET /diagnostico/lista_ip
+ *
+ * El endpoint es company-wide (devuelve respuestas de SIMCO + Fleet + otras
+ * empresas en la misma cuenta). Filtramos a SIMCO usando `isSimcoRow`
+ * sobre cada fila — las filas no traen `sucursal_id` pero sí `sucursal`
+ * como string, así que el filtro compara por nombre.
+ */
 export async function getEcoResultados(args?: {
   sucursal_id?: string | number;
   consecutivo?: string | number;
 }): Promise<ListaIPResponse> {
-  return potentorFetch<ListaIPResponse>("/diagnostico/lista_ip", {
+  const resp = await potentorFetch<ListaIPResponse>("/diagnostico/lista_ip", {
     query: {
       sucursal_id: args?.sucursal_id,
       consecutivo: args?.consecutivo,
     },
     tags: ["diagnostico", "eco"],
   });
+  const filtered = (resp.data ?? []).filter((r) =>
+    isSimcoRow({ sucursal: r.sucursal }),
+  );
+  return { ...resp, data: filtered };
 }
 
 // ============ Agregados para el dashboard ============
