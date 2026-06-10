@@ -1,4 +1,5 @@
 import { potentorFetch, POTENTOR_DEFAULTS } from "./client";
+import { resolverEmpleado } from "./name-overrides";
 
 /**
  * Endpoints de organigrama / jerarquía organizacional.
@@ -51,8 +52,11 @@ export function parseOrganigrama(raw: OrgRaw): OrgNode[] {
     const childrenRaw = value[1];
     const dashIdx = label.indexOf("-");
     const puesto = dashIdx > -1 ? label.slice(0, dashIdx).trim() : label.trim();
-    const empleado =
+    const empleadoApi =
       dashIdx > -1 ? label.slice(dashIdx + 1).trim() : "";
+    // Aplica overrides manuales por puesto antes de que cualquier renderer
+    // toque el dato (así también afectan el tree, no solo el chart).
+    const empleado = resolverEmpleado(puesto, empleadoApi);
     out.push({
       clave,
       puesto,

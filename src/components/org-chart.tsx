@@ -120,6 +120,13 @@ function OrgChartNode({
   );
 }
 
+/** Una posición es vacante si el empleado está vacío o es exactamente "N/A". */
+function esVacante(empleado: string): boolean {
+  const trimmed = (empleado ?? "").trim();
+  if (!trimmed) return true;
+  return /^n\s*\/?\s*a$/i.test(trimmed);
+}
+
 function OrgChartCard({
   nodo,
   depth,
@@ -133,7 +140,7 @@ function OrgChartCard({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const isVacante = !nodo.empleado || /n\/?a/i.test(nodo.empleado);
+  const isVacante = esVacante(nodo.empleado);
   const isRoot = depth === 0;
   const initials = getInitials(nodo.empleado);
 
@@ -218,8 +225,8 @@ function OrgChartCard({
 }
 
 function getInitials(name: string): string {
-  const cleaned = name.trim();
-  if (!cleaned || /n\/?a/i.test(cleaned)) return "?";
+  const cleaned = (name ?? "").trim();
+  if (esVacante(cleaned)) return "?";
   const parts = cleaned.split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();

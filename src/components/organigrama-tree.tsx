@@ -39,7 +39,8 @@ function OrgNodeItem({
 }) {
   const [open, setOpen] = useState(depth < defaultExpandLevel);
   const hasChildren = nodo.hijos.length > 0;
-  const isVacante = !nodo.empleado || /n\/?a/i.test(nodo.empleado);
+  const isVacante =
+    !nodo.empleado.trim() || /^n\s*\/?\s*a$/i.test(nodo.empleado.trim());
 
   return (
     <li>
