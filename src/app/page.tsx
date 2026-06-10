@@ -94,6 +94,23 @@ async function OverviewContent() {
   // Pipeline mensual de vacantes 2026 (Ene-Dic) por estatus
   const pipelineMensual2026 = buildPipelineMensual(vacantes, 2026);
 
+  // Métricas derivadas para las barras de % de las cards
+  const estructuraTotal = hcResumen.total + vacResumen.abiertas2026;
+  const coberturaPct =
+    estructuraTotal > 0
+      ? Math.round((hcResumen.total / estructuraTotal) * 100)
+      : 0;
+  const vacantesCerradas2026 =
+    vacResumen.vacantes2026 - vacResumen.abiertas2026;
+  const pctAbiertas2026 =
+    vacResumen.vacantes2026 > 0
+      ? Math.round((vacResumen.abiertas2026 / vacResumen.vacantes2026) * 100)
+      : 0;
+  const pctCerradas2026 =
+    vacResumen.vacantes2026 > 0
+      ? Math.round((vacantesCerradas2026 / vacResumen.vacantes2026) * 100)
+      : 0;
+
   // Slim shape para el modal y la sección. Enriquecido con fecha_cierre
   // desde /vacante/info.
   const vacantes2026Slim = vacantes
@@ -139,6 +156,11 @@ async function OverviewContent() {
           hint="Plantilla actual · click para organigrama"
           icon={<Users className="h-4 w-4" />}
           tone="teal"
+          progress={{
+            pct: coberturaPct,
+            primaryLabel: `${coberturaPct}% cobertura`,
+            secondaryLabel: `${hcResumen.total}/${estructuraTotal} ocupadas`,
+          }}
           modalTitle="Organigrama SIMCO"
           modalSubtitle={`Posiciones por nivel jerárquico · ${hcResumen.total} empleados en plantilla`}
           modalSize="full"
@@ -161,9 +183,14 @@ async function OverviewContent() {
         <KpiCardClickable
           label="Vacantes 2026"
           value={vacResumen.vacantes2026}
-          hint={`${vacResumen.abiertas2026} abiertas · click para ver`}
+          hint="Click para ver detalle"
           icon={<Briefcase className="h-4 w-4" />}
           tone={vacResumen.vacantes2026 > 0 ? "warning" : "default"}
+          progress={{
+            pct: pctAbiertas2026,
+            primaryLabel: `${pctAbiertas2026}% abiertas`,
+            secondaryLabel: `${pctCerradas2026}% cerradas`,
+          }}
           modalTitle="Vacantes creadas en 2026"
           modalSubtitle={`${vacantes2026Slim.length} registros · ordenadas por fecha de creación`}
           modalSize="xl"

@@ -8,6 +8,12 @@ interface KpiCardProps {
   trend?: { delta: number; suffix?: string };
   icon?: ReactNode;
   tone?: "default" | "teal" | "blue" | "warning" | "danger" | "success";
+  /** Barra de progreso compacta. Si está definida, se renderiza entre el valor y el hint. */
+  progress?: {
+    pct: number;
+    primaryLabel: string;
+    secondaryLabel?: string;
+  };
   className?: string;
 }
 
@@ -16,31 +22,37 @@ const TONES = {
     border: "border-[var(--color-border)]",
     accent: "text-[var(--color-text-dim)]",
     glow: "",
+    barFill: "bg-[var(--color-text-dim)]",
   },
   teal: {
     border: "border-[var(--color-accent-teal)]/30",
     accent: "text-[var(--color-accent-teal)]",
     glow: "shadow-[0_0_24px_-12px_var(--color-accent-teal)]",
+    barFill: "bg-[var(--color-accent-teal)]",
   },
   blue: {
     border: "border-[var(--color-accent-blue)]/30",
     accent: "text-[var(--color-accent-blue)]",
     glow: "shadow-[0_0_24px_-12px_var(--color-accent-blue)]",
+    barFill: "bg-[var(--color-accent-blue)]",
   },
   success: {
     border: "border-[var(--color-accent-teal)]/30",
     accent: "text-[var(--color-accent-teal)]",
     glow: "shadow-[0_0_24px_-12px_var(--color-accent-teal)]",
+    barFill: "bg-[var(--color-accent-teal)]",
   },
   warning: {
     border: "border-[var(--color-accent-orange)]/35",
     accent: "text-[var(--color-accent-orange)]",
     glow: "shadow-[0_0_24px_-12px_var(--color-accent-orange)]",
+    barFill: "bg-[var(--color-accent-orange)]",
   },
   danger: {
     border: "border-[var(--color-accent-red)]/35",
     accent: "text-[var(--color-accent-red)]",
     glow: "shadow-[0_0_24px_-12px_var(--color-accent-red)]",
+    barFill: "bg-[var(--color-accent-red)]",
   },
 } as const;
 
@@ -51,6 +63,7 @@ export function KpiCard({
   trend,
   icon,
   tone = "default",
+  progress,
   className,
 }: KpiCardProps) {
   const t = TONES[tone];
@@ -80,6 +93,30 @@ export function KpiCard({
       >
         {typeof value === "number" ? formatNumber(value) : (value ?? "—")}
       </p>
+
+      {progress && (
+        <div className="space-y-1">
+          <div className="h-1 bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                t.barFill,
+              )}
+              style={{ width: `${Math.min(Math.max(progress.pct, 0), 100)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[10px] tabular-nums">
+            <span className={cn("font-medium", t.accent)}>
+              {progress.primaryLabel}
+            </span>
+            {progress.secondaryLabel && (
+              <span className="text-[var(--color-text-dim)]">
+                {progress.secondaryLabel}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs gap-2">
         {hint && (

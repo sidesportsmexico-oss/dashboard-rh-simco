@@ -11,6 +11,11 @@ interface KpiCardClickableProps {
   trend?: { delta: number; suffix?: string };
   icon?: ReactNode;
   tone?: "default" | "teal" | "blue" | "warning" | "danger" | "success";
+  progress?: {
+    pct: number;
+    primaryLabel: string;
+    secondaryLabel?: string;
+  };
   modalTitle: string;
   modalSubtitle?: string;
   modalSize?: "md" | "lg" | "xl" | "full";
