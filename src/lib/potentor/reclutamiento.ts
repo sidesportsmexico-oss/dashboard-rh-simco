@@ -2,6 +2,60 @@ import { potentorFetch, POTENTOR_DEFAULTS, isSimcoRow } from "./client";
 import type { Vacante, VacanteEtapa, Candidato } from "./types";
 
 /**
+ * Detalle adicional por vacante desde /vacante/info?sucursal_id=X.
+ * Trae más campos que /reclutamiento/lista — incluyendo fecha_cierre.
+ */
+interface VacanteInfoRow {
+  id_vacante: string;
+  nombre: string;
+  fecha_inicio: string;
+  fecha_cierre: string;
+  estatus: string; // código: 1=Standby, 2=En Proceso, 3=Cerrada
+  [key: string]: unknown;
+}
+
+interface VacanteInfoResponse {
+  status: boolean;
+  result: VacanteInfoRow[];
+}
+
+/**
+ * Listado detallado de vacantes incluyendo fecha_cierre.
+ * GET /vacante/info?sucursal_id=X
+ */
+export async function getVacanteInfo(
+  sucursal_id: string | number = POTENTOR_DEFAULTS.sucursal ?? "",
+): Promise<VacanteInfoRow[]> {
+  const resp = await potentorFetch<VacanteInfoResponse>("/vacante/info", {
+    query: { sucursal_id },
+    tags: ["reclutamiento", "vacante-info"],
+  });
+  return resp.result ?? [];
+}
+
+/**
+ * Devuelve un Map vacante_id → fecha_cierre para enriquecer las vacantes
+ * de /reclutamiento/lista. Si falla la llamada, devuelve Map vacío
+ * (no rompe el render).
+ */
+export async function getMapaFechaCierre(
+  sucursal_id: string | number = POTENTOR_DEFAULTS.sucursal ?? "",
+): Promise<Map<string, string>> {
+  try {
+    const rows = await getVacanteInfo(sucursal_id);
+    const m = new Map<string, string>();
+    for (const r of rows) {
+      if (r.id_vacante && r.fecha_cierre) {
+        m.set(String(r.id_vacante), r.fecha_cierre);
+      }
+    }
+    return m;
+  } catch {
+    return new Map();
+  }
+}
+
+/**
  * Catálogo de vacantes de SIMCO.
  * Endpoint: GET /reclutamiento/lista (company-wide — incluye Fleet/Lexium,
  * filtramos a SIMCO con `isSimcoRow`).

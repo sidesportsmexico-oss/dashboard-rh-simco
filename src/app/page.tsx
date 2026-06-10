@@ -15,6 +15,7 @@ import {
   resumenVacantes,
   buildFunnelDesdeVacantes,
   isVacante2026,
+  getMapaFechaCierre,
 } from "@/lib/potentor/reclutamiento";
 import {
   getHeadcountReporte,
@@ -61,14 +62,21 @@ async function EcoKpi() {
 }
 
 async function OverviewContent() {
-  const [vacantesRes, headcountRes, empresaRes, jerarquiasRes, organigramaRes] =
-    await Promise.allSettled([
-      getVacantes(),
-      getHeadcountReporte(),
-      getEmpresaInfo(),
-      getJerarquias(),
-      getOrganigrama(),
-    ]);
+  const [
+    vacantesRes,
+    headcountRes,
+    empresaRes,
+    jerarquiasRes,
+    organigramaRes,
+    cierreRes,
+  ] = await Promise.allSettled([
+    getVacantes(),
+    getHeadcountReporte(),
+    getEmpresaInfo(),
+    getJerarquias(),
+    getOrganigrama(),
+    getMapaFechaCierre(),
+  ]);
 
   const vacantes =
     vacantesRes.status === "fulfilled" ? vacantesRes.value : [];
@@ -78,12 +86,15 @@ async function OverviewContent() {
     jerarquiasRes.status === "fulfilled" ? jerarquiasRes.value : [];
   const organigrama =
     organigramaRes.status === "fulfilled" ? organigramaRes.value : [];
+  const mapaFechaCierre =
+    cierreRes.status === "fulfilled" ? cierreRes.value : new Map<string, string>();
 
   const vacResumen = resumenVacantes(vacantes);
   const hcResumen = resumenHeadcount(headcount);
   const funnel = buildFunnelDesdeVacantes(vacantes);
 
-  // Slim shape para el modal y la sección
+  // Slim shape para el modal y la sección. Enriquecido con fecha_cierre
+  // desde /vacante/info.
   const vacantes2026Slim = vacantes
     .filter(isVacante2026)
     .sort((a, b) => (b.fecha_creacion ?? "").localeCompare(a.fecha_creacion ?? ""))
@@ -93,6 +104,7 @@ async function OverviewContent() {
       puesto: v.puesto,
       sucursal: v.sucursal,
       fecha_creacion: v.fecha_creacion,
+      fecha_cierre: mapaFechaCierre.get(v.vacante_id) ?? null,
       estatus: v.estatus,
       link: v.link,
     }));

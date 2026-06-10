@@ -11,6 +11,7 @@ import {
   getVacantes,
   resumenVacantes,
   isVacante2026,
+  getMapaFechaCierre,
 } from "@/lib/potentor/reclutamiento";
 import {
   getJerarquias,
@@ -21,11 +22,12 @@ import { HeadcountKpisClient } from "@/components/headcount-kpis-client";
 export const revalidate = 600;
 
 async function Content() {
-  const [hcRes, vacRes, jerRes, orgRes] = await Promise.allSettled([
+  const [hcRes, vacRes, jerRes, orgRes, cierreRes] = await Promise.allSettled([
     getHeadcountReporte(),
     getVacantes(),
     getJerarquias(),
     getOrganigrama(),
+    getMapaFechaCierre(),
   ]);
 
   if (hcRes.status === "rejected") {
@@ -41,6 +43,8 @@ async function Content() {
   const vacantes = vacRes.status === "fulfilled" ? vacRes.value : [];
   const jerarquias = jerRes.status === "fulfilled" ? jerRes.value : [];
   const organigrama = orgRes.status === "fulfilled" ? orgRes.value : [];
+  const mapaFechaCierre =
+    cierreRes.status === "fulfilled" ? cierreRes.value : new Map<string, string>();
 
   const hcResumen = resumenHeadcount(headcount);
   const vacResumen = resumenVacantes(vacantes);
@@ -52,6 +56,7 @@ async function Content() {
 
   // Las vacantes 2026 ordenadas por fecha desc para el modal.
   // Slim shape: solo los campos que renderiza la tabla, sin HTML pesado.
+  // Enriquecidas con fecha_cierre desde /vacante/info.
   const vacantes2026List = vacantes
     .filter(isVacante2026)
     .sort((a, b) => (b.fecha_creacion ?? "").localeCompare(a.fecha_creacion ?? ""))
@@ -61,6 +66,7 @@ async function Content() {
       puesto: v.puesto,
       sucursal: v.sucursal,
       fecha_creacion: v.fecha_creacion,
+      fecha_cierre: mapaFechaCierre.get(v.vacante_id) ?? null,
       estatus: v.estatus,
       link: v.link,
     }));

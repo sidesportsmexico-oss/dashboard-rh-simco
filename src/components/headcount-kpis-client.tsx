@@ -18,6 +18,7 @@ export interface VacanteSlim {
   puesto: string;
   sucursal: string;
   fecha_creacion: string;
+  fecha_cierre?: string | null;
   estatus: string;
   link?: string;
 }

@@ -151,6 +151,7 @@ interface VacantesTableProps {
     puesto: string;
     sucursal: string;
     fecha_creacion: string;
+    fecha_cierre?: string | null;
     estatus: string;
     link?: string;
   }[];
@@ -165,7 +166,8 @@ export function VacantesTableModal({ vacantes }: VacantesTableProps) {
           <tr className="text-left text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-dim)] border-b border-[var(--color-border)]">
             <th className="px-6 py-3 font-medium">Vacante</th>
             <th className="px-6 py-3 font-medium">Puesto</th>
-            <th className="px-6 py-3 font-medium">Fecha</th>
+            <th className="px-6 py-3 font-medium">Fecha creación</th>
+            <th className="px-6 py-3 font-medium">Fecha cierre</th>
             <th className="px-6 py-3 font-medium">Estatus</th>
           </tr>
         </thead>
@@ -195,7 +197,10 @@ export function VacantesTableModal({ vacantes }: VacantesTableProps) {
                   {v.puesto}
                 </td>
                 <td className="px-6 py-2.5 text-[var(--color-text-dim)] tabular-nums text-xs">
-                  {v.fecha_creacion}
+                  {v.fecha_creacion || "—"}
+                </td>
+                <td className="px-6 py-2.5 text-[var(--color-text-dim)] tabular-nums text-xs">
+                  {v.fecha_cierre || "—"}
                 </td>
                 <td className="px-6 py-2.5">
                   <Badge closed={closed}>{v.estatus || "—"}</Badge>
