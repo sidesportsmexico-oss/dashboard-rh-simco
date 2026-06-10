@@ -41,6 +41,8 @@ export interface Vacante {
   estatus: string;
   /** Public posting URL. */
   link: string;
+  /** "YYYY-MM-DD" — agregado por Potentor 2026-06-04 */
+  fecha_creacion: string;
 }
 
 export interface VacanteEtapa {

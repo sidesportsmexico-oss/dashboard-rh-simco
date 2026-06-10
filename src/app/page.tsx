@@ -100,10 +100,10 @@ async function OverviewContent() {
         />
         <KpiCard
           label="Vacantes 2026"
-          value={vacResumen.enReclutamiento}
-          hint={`${vacResumen.total} históricas totales`}
+          value={vacResumen.vacantes2026}
+          hint={`${vacResumen.abiertas2026} abiertas`}
           icon={<Briefcase className="h-4 w-4" />}
-          tone={vacResumen.enReclutamiento > 0 ? "warning" : "default"}
+          tone={vacResumen.vacantes2026 > 0 ? "warning" : "default"}
         />
         <Suspense
           fallback={<KpiCard label="ECO 2025 SIMCO" value="…" />}

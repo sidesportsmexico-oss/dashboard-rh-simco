@@ -32,9 +32,8 @@ async function Content() {
   const hcResumen = resumenHeadcount(headcount);
   const vacResumen = resumenVacantes(vacantes);
 
-  // Para cobertura: usamos las vacantes 2026 (En Proceso) como "abiertas" reales.
-  // Standby no son posiciones que estemos buscando ocupar ahora.
-  const vacantesAbiertas2026 = vacResumen.enReclutamiento;
+  // Para cobertura: usamos las vacantes creadas en 2026 que siguen abiertas.
+  const vacantesAbiertas2026 = vacResumen.abiertas2026;
   const totalEstructura = hcResumen.total + vacantesAbiertas2026;
   const cobertura =
     totalEstructura > 0 ? (hcResumen.total / totalEstructura) * 100 : 0;

@@ -80,46 +80,55 @@ export function buildFunnelDesdeVacantes(vacantes: Vacante[]): FunnelStage[] {
 }
 
 /**
- * Proxy para "vacante creada en 2026". El API NO expone fecha de creación
- * (campo ausente del listado y /vacante/find da 403 con la key actual).
- * Acordado con el CEO 2026-06-04: las vacantes "En Proceso" son las que
- * se reclutan activamente ahora ≈ las del ciclo 2026.
- *
- * Cuando Potentor habilite la fecha real, reemplazar esto por el filtro
- * por fecha_creacion.year === 2026.
+ * Vacantes creadas en 2026. Filtro real desde 2026-06-04 cuando Potentor
+ * agregó `fecha_creacion` al response de /reclutamiento/lista.
  */
+export function isVacante2026(v: Vacante): boolean {
+  return (v.fecha_creacion ?? "").startsWith("2026");
+}
+
+/** Vacantes "En Proceso" — activamente reclutando, sin importar año de creación. */
 export function isVacanteEnReclutamiento(v: Vacante): boolean {
   const e = (v.estatus || "").toLowerCase().trim();
   return /en\s*proceso/.test(e);
 }
 
 export type VacantesResumen = {
-  total: number;
-  abiertas: number; // total históricas no cerradas (Standby + En Proceso)
-  enReclutamiento: number; // proxy 2026 = En Proceso
-  porSucursal: Map<string, number>; // todas las vacantes
-  porSucursal2026: Map<string, number>; // solo En Proceso
+  total: number; // todas las históricas
+  abiertas: number; // no cerradas
+  vacantes2026: number; // fecha_creacion en 2026
+  enReclutamiento: number; // estatus En Proceso (cualquier año)
+  abiertas2026: number; // creadas en 2026 + estatus no cerrado
+  porSucursal: Map<string, number>;
+  porSucursal2026: Map<string, number>; // creadas en 2026
 };
 
 export function resumenVacantes(vacantes: Vacante[]): VacantesResumen {
   const porSucursal = new Map<string, number>();
   const porSucursal2026 = new Map<string, number>();
   let abiertas = 0;
+  let vacantes2026 = 0;
   let enReclutamiento = 0;
+  let abiertas2026 = 0;
   for (const v of vacantes) {
     const sName = v.sucursal || "Sin sucursal";
     porSucursal.set(sName, (porSucursal.get(sName) ?? 0) + 1);
     const e = (v.estatus || "").toLowerCase();
-    if (!/cubierta|cancelada|cerrada/.test(e)) abiertas++;
-    if (isVacanteEnReclutamiento(v)) {
-      enReclutamiento++;
+    const cerrada = /cubierta|cancelada|cerrada/.test(e);
+    if (!cerrada) abiertas++;
+    if (isVacanteEnReclutamiento(v)) enReclutamiento++;
+    if (isVacante2026(v)) {
+      vacantes2026++;
       porSucursal2026.set(sName, (porSucursal2026.get(sName) ?? 0) + 1);
+      if (!cerrada) abiertas2026++;
     }
   }
   return {
     total: vacantes.length,
     abiertas,
+    vacantes2026,
     enReclutamiento,
+    abiertas2026,
     porSucursal,
     porSucursal2026,
   };

@@ -70,23 +70,28 @@ const TESTS = [
   },
   {
     name: "Vacantes — catálogo de etapas",
-    path: `/vacante/etapas?sucursal=${SUCURSAL}`,
+    path: `/vacante/etapas?sucursal_id=${SUCURSAL}`,
     must: (j) =>
+      (j?.status === true && Array.isArray(j.result)) ||
       Array.isArray(j) ||
-      (j?.data && Array.isArray(j.data)) ||
-      (typeof j === "object" && j !== null && Object.keys(j).every((k) => /^\d+$/.test(k))),
-    softFail: true,
-    note: "Sandbox da 403; en PROD debe tener permiso — verificar al cargar la key real",
+      (j?.data && Array.isArray(j.data)),
+    note: "Requiere sucursal_id (no sucursal) — Potentor confirmó 2026-06-04",
   },
   {
     name: "Vacantes — tipos de contratación",
-    path: "/vacante/tipo_contratacion",
+    path: `/vacante/tipo_contratacion?sucursal_id=${SUCURSAL}`,
     must: (j) =>
+      (j?.status === true && Array.isArray(j.result)) ||
       Array.isArray(j) ||
-      (j?.data && Array.isArray(j.data)) ||
-      (typeof j === "object" && j !== null && Object.keys(j).every((k) => /^\d+$/.test(k))),
-    softFail: true,
-    note: "Sandbox suele dar 403; en PROD debe tener permiso",
+      (j?.data && Array.isArray(j.data)),
+    note: "Requiere sucursal_id",
+  },
+  {
+    name: "Vacantes — listado detallado",
+    path: `/vacante/info?sucursal_id=${SUCURSAL}`,
+    must: (j) =>
+      (j?.status === true && Array.isArray(j.result)) || Array.isArray(j),
+    note: "Endpoint que da listado MÁS detallado que /reclutamiento/lista",
   },
   {
     name: "Head Count — catálogo campos",
