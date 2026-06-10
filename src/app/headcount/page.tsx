@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { Users, Briefcase } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
 import { PageHeader } from "@/components/page-header";
@@ -8,14 +7,25 @@ import {
   getHeadcountReporte,
   resumenHeadcount,
 } from "@/lib/potentor/headcount";
-import { getVacantes, resumenVacantes } from "@/lib/potentor/reclutamiento";
+import {
+  getVacantes,
+  resumenVacantes,
+  isVacante2026,
+} from "@/lib/potentor/reclutamiento";
+import {
+  getJerarquias,
+  getOrganigrama,
+} from "@/lib/potentor/organigrama";
+import { HeadcountKpisClient } from "@/components/headcount-kpis-client";
 
 export const revalidate = 600;
 
 async function Content() {
-  const [hcRes, vacRes] = await Promise.allSettled([
+  const [hcRes, vacRes, jerRes, orgRes] = await Promise.allSettled([
     getHeadcountReporte(),
     getVacantes(),
+    getJerarquias(),
+    getOrganigrama(),
   ]);
 
   if (hcRes.status === "rejected") {
@@ -29,14 +39,21 @@ async function Content() {
 
   const headcount = hcRes.value;
   const vacantes = vacRes.status === "fulfilled" ? vacRes.value : [];
+  const jerarquias = jerRes.status === "fulfilled" ? jerRes.value : [];
+  const organigrama = orgRes.status === "fulfilled" ? orgRes.value : [];
+
   const hcResumen = resumenHeadcount(headcount);
   const vacResumen = resumenVacantes(vacantes);
 
-  // Para cobertura: usamos las vacantes creadas en 2026 que siguen abiertas.
   const vacantesAbiertas2026 = vacResumen.abiertas2026;
   const totalEstructura = hcResumen.total + vacantesAbiertas2026;
   const cobertura =
     totalEstructura > 0 ? (hcResumen.total / totalEstructura) * 100 : 0;
+
+  // Las vacantes 2026 ordenadas por fecha desc para el modal
+  const vacantes2026List = vacantes
+    .filter(isVacante2026)
+    .sort((a, b) => (b.fecha_creacion ?? "").localeCompare(a.fecha_creacion ?? ""));
 
   return (
     <div className="space-y-8">
@@ -46,44 +63,15 @@ async function Content() {
         tags={["Vista CEO", "Potentor /headcount"]}
       />
 
-      {/* Dos KPIs grandes lado a lado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div
-          className="rounded-2xl border border-[var(--color-accent-teal)]/25 bg-[var(--color-bg-card)] p-8 flex flex-col gap-4
-                        shadow-[0_0_36px_-18px_var(--color-accent-teal)]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-              Posiciones SIMCO
-            </span>
-            <Users className="h-5 w-5 text-[var(--color-accent-teal)]" />
-          </div>
-          <p className="text-6xl font-semibold tracking-tight tabular-nums text-[var(--color-text)]">
-            {formatNumber(hcResumen.total)}
-          </p>
-          <p className="text-xs text-[var(--color-text-dim)]">
-            Total de posiciones registradas en la compañía
-          </p>
-        </div>
-
-        <div
-          className="rounded-2xl border border-[var(--color-accent-orange)]/30 bg-[var(--color-bg-card)] p-8 flex flex-col gap-4
-                        shadow-[0_0_36px_-18px_var(--color-accent-orange)]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent-orange)]">
-              Vacantes 2026
-            </span>
-            <Briefcase className="h-5 w-5 text-[var(--color-accent-orange)]" />
-          </div>
-          <p className="text-6xl font-semibold tracking-tight tabular-nums text-[var(--color-text)]">
-            {formatNumber(vacantesAbiertas2026)}
-          </p>
-          <p className="text-xs text-[var(--color-text-dim)]">
-            Activamente en reclutamiento ahora
-          </p>
-        </div>
-      </div>
+      <HeadcountKpisClient
+        posiciones={hcResumen.total}
+        hintPosiciones="Plantilla actual"
+        vacantes2026={vacResumen.vacantes2026}
+        hintVacantes={`${vacantesAbiertas2026} abiertas · ${vacResumen.vacantes2026 - vacantesAbiertas2026} cerradas`}
+        jerarquias={jerarquias}
+        organigrama={organigrama}
+        vacantes={vacantes2026List}
+      />
 
       <SectionCard
         title="Cobertura de plantilla"

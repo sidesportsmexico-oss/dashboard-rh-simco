@@ -5,3 +5,4 @@ export * from "./reclutamiento";
 export * from "./headcount";
 export * from "./desempeno";
 export * from "./diagnostico";
+export * from "./organigrama";
