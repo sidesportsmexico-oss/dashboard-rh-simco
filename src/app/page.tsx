@@ -13,7 +13,7 @@ import { OrgChart } from "@/components/org-chart";
 import {
   getVacantes,
   resumenVacantes,
-  buildFunnelDesdeVacantes,
+  buildPipelineMensual,
   isVacante2026,
   getMapaFechaCierre,
 } from "@/lib/potentor/reclutamiento";
@@ -27,7 +27,7 @@ import {
   compararEncuestas,
 } from "@/lib/potentor/diagnostico";
 import { getJerarquias, getOrganigrama } from "@/lib/potentor/organigrama";
-import { FunnelChart } from "@/components/funnel-chart";
+import { PipelineMensualChart } from "@/components/pipeline-mensual-chart";
 
 export const revalidate = 600;
 
@@ -91,7 +91,8 @@ async function OverviewContent() {
 
   const vacResumen = resumenVacantes(vacantes);
   const hcResumen = resumenHeadcount(headcount);
-  const funnel = buildFunnelDesdeVacantes(vacantes);
+  // Pipeline mensual de vacantes 2026 (Ene-Dic) por estatus
+  const pipelineMensual2026 = buildPipelineMensual(vacantes, 2026);
 
   // Slim shape para el modal y la sección. Enriquecido con fecha_cierre
   // desde /vacante/info.
@@ -191,10 +192,10 @@ async function OverviewContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SectionCard
-          title="Pipeline de reclutamiento"
-          description="Vacantes agrupadas por estatus"
+          title="Pipeline de reclutamiento 2026"
+          description="Vacantes creadas por mes — Ene a Dic · stacked por etapa"
         >
-          <FunnelChart data={funnel} />
+          <PipelineMensualChart data={pipelineMensual2026} />
         </SectionCard>
 
         <SectionCard

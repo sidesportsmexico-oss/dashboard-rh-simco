@@ -133,6 +133,69 @@ export function buildFunnelDesdeVacantes(vacantes: Vacante[]): FunnelStage[] {
     .sort((a, b) => b.count - a.count);
 }
 
+// ============ Pipeline mensual (Ene-Dic) por estatus ============
+
+const MESES_CORTO = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
+
+export type PipelineMensualPunto = {
+  mes: string;
+  monthIdx: number;
+  enProceso: number;
+  standby: number;
+  cerrada: number;
+  total: number;
+};
+
+/**
+ * Construye un array de 12 puntos (uno por mes) contando las vacantes
+ * creadas en cada mes del año dado, agrupadas en 3 etapas. Si no hay
+ * vacantes en un mes, devuelve ceros para preservar el eje completo.
+ */
+export function buildPipelineMensual(
+  vacantes: Vacante[],
+  year: number,
+): PipelineMensualPunto[] {
+  const data: PipelineMensualPunto[] = Array.from({ length: 12 }, (_, i) => ({
+    mes: MESES_CORTO[i],
+    monthIdx: i + 1,
+    enProceso: 0,
+    standby: 0,
+    cerrada: 0,
+    total: 0,
+  }));
+  const yearPrefix = String(year);
+  for (const v of vacantes) {
+    const fecha = v.fecha_creacion ?? "";
+    if (!fecha.startsWith(yearPrefix)) continue;
+    const month = Number(fecha.slice(5, 7));
+    if (!Number.isFinite(month) || month < 1 || month > 12) continue;
+    const point = data[month - 1];
+    const estatus = (v.estatus ?? "").toLowerCase();
+    if (/en\s*proceso/.test(estatus)) {
+      point.enProceso++;
+    } else if (/standby/.test(estatus)) {
+      point.standby++;
+    } else if (/cerrada|cubierta|cancelada/.test(estatus)) {
+      point.cerrada++;
+    }
+    point.total++;
+  }
+  return data;
+}
+
 /**
  * Vacantes creadas en 2026. Filtro real desde 2026-06-04 cuando Potentor
  * agregó `fecha_creacion` al response de /reclutamiento/lista.
