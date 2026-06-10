@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronUp, UserX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { OrgNode } from "@/lib/potentor/organigrama";
+import { toTitleCase } from "@/lib/utils";
 
 interface OrgChartProps {
   nodos: OrgNode[];
@@ -170,8 +171,8 @@ function OrgChartCard({
       >
         {isVacante ? <UserX className="h-4 w-4" /> : initials}
       </div>
-      <p className="text-[9px] uppercase tracking-[0.14em] font-semibold text-[var(--color-text-dim)] leading-tight line-clamp-2">
-        {nodo.puesto}
+      <p className="text-[10px] tracking-tight font-semibold text-[var(--color-text-dim)] leading-tight line-clamp-2">
+        {toTitleCase(nodo.puesto)}
       </p>
       <p
         className={`text-xs font-medium mt-1.5 leading-tight line-clamp-2 ${
@@ -180,7 +181,7 @@ function OrgChartCard({
             : "text-[var(--color-text)]"
         }`}
       >
-        {isVacante ? "Vacante" : nodo.empleado}
+        {isVacante ? "Vacante" : toTitleCase(nodo.empleado)}
       </p>
       <div className="mt-2 flex items-center gap-1.5">
         <span className="text-[9px] font-mono text-[var(--color-text-dim)] tracking-wide">
