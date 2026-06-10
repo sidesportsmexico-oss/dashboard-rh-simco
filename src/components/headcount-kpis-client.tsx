@@ -10,7 +10,17 @@ import {
   VacantesTableModal,
 } from "@/components/organigrama-tree";
 import type { OrgNode, Jerarquia } from "@/lib/potentor/organigrama";
-import type { Vacante } from "@/lib/potentor/types";
+
+/** Shape mínimo que necesita la tabla del modal — evita serializar HTML pesado al cliente. */
+export interface VacanteSlim {
+  vacante_id: string;
+  nombre: string;
+  puesto: string;
+  sucursal: string;
+  fecha_creacion: string;
+  estatus: string;
+  link?: string;
+}
 
 interface Props {
   posiciones: number;
@@ -19,7 +29,7 @@ interface Props {
   hintVacantes: string;
   jerarquias: Jerarquia[];
   organigrama: OrgNode[];
-  vacantes: Vacante[];
+  vacantes: VacanteSlim[];
 }
 
 export function HeadcountKpisClient({
@@ -128,7 +138,7 @@ function ClickableBigCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group text-left rounded-2xl border bg-[var(--color-bg-card)] p-8 flex flex-col gap-4 transition-all hover:bg-[var(--color-bg-elevated)] hover:scale-[1.005] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-teal)] ${styles.border} ${styles.glow}`}
+      className={`group text-left rounded-2xl border bg-[var(--color-bg-card)] p-8 flex flex-col gap-4 transition-all cursor-pointer hover:bg-[var(--color-bg-elevated)] hover:scale-[1.005] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-teal)] ${styles.border} ${styles.glow}`}
     >
       <div className="flex items-center justify-between">
         <span

@@ -50,10 +50,20 @@ async function Content() {
   const cobertura =
     totalEstructura > 0 ? (hcResumen.total / totalEstructura) * 100 : 0;
 
-  // Las vacantes 2026 ordenadas por fecha desc para el modal
+  // Las vacantes 2026 ordenadas por fecha desc para el modal.
+  // Slim shape: solo los campos que renderiza la tabla, sin HTML pesado.
   const vacantes2026List = vacantes
     .filter(isVacante2026)
-    .sort((a, b) => (b.fecha_creacion ?? "").localeCompare(a.fecha_creacion ?? ""));
+    .sort((a, b) => (b.fecha_creacion ?? "").localeCompare(a.fecha_creacion ?? ""))
+    .map((v) => ({
+      vacante_id: v.vacante_id,
+      nombre: v.nombre,
+      puesto: v.puesto,
+      sucursal: v.sucursal,
+      fecha_creacion: v.fecha_creacion,
+      estatus: v.estatus,
+      link: v.link,
+    }));
 
   return (
     <div className="space-y-8">
