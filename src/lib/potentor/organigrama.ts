@@ -54,9 +54,9 @@ export function parseOrganigrama(raw: OrgRaw): OrgNode[] {
     const puesto = dashIdx > -1 ? label.slice(0, dashIdx).trim() : label.trim();
     const empleadoApi =
       dashIdx > -1 ? label.slice(dashIdx + 1).trim() : "";
-    // Aplica overrides manuales por puesto antes de que cualquier renderer
-    // toque el dato (así también afectan el tree, no solo el chart).
-    const empleado = resolverEmpleado(puesto, empleadoApi);
+    // Aplica overrides manuales (por clave o por puesto) antes de que
+    // cualquier renderer toque el dato. Así afectan al tree y al chart.
+    const empleado = resolverEmpleado(clave, puesto, empleadoApi);
     out.push({
       clave,
       puesto,

@@ -1,19 +1,27 @@
 /**
- * Overrides manuales de nombre por puesto.
+ * Overrides manuales de nombre.
  *
- * El API de Potentor devuelve los nombres en caja arbitraria (a veces UPPERCASE,
- * otros mixed case), sin acentos, y a veces incompletos o como "N/A". Este mapa
- * permite que el dashboard muestre los nombres en la forma que el CEO quiere
- * (versión corta, con acentos correctos) sin tener que esperar a que se
+ * El API de Potentor devuelve los nombres en caja arbitraria, sin acentos, y a
+ * veces incompletos o como "N/A" cuando la persona ya no está pero el puesto
+ * sigue ocupado por alguien más. Este archivo permite que el dashboard muestre
+ * los nombres correctos (versión corta + acentos) sin esperar a que se
  * actualicen los datos en Potentor.
  *
- * La clave es el puesto normalizado (lowercase + sin acentos + sin dobles
- * espacios). El valor es el nombre tal y como queremos mostrarlo.
+ * Dos formas de override:
  *
- * Si una posición no tiene override, se usa el nombre tal cual viene del API.
+ *  1. Por CLAVE (ej. "S22"): aplica a esa posición específica del organigrama.
+ *     Es la opción más precisa, ideal cuando hay varias posiciones con el
+ *     mismo nombre de puesto (ej. 4 Project Managers distintos).
+ *
+ *  2. Por PUESTO (ej. "Gerente de Recursos Humanos"): aplica a TODAS las
+ *     posiciones con ese nombre de puesto. Útil cuando solo hay una.
+ *
+ * Si una posición tiene override por CLAVE, gana sobre el de puesto.
+ *
+ * Usa "N/A" como valor para marcar explícitamente una posición como vacante.
  */
 
-const OVERRIDES_RAW: ReadonlyArray<readonly [string, string]> = [
+const POR_PUESTO_RAW: ReadonlyArray<readonly [string, string]> = [
   ["Gerente de Recursos Humanos", "Stephanie González"],
   ["Coordinadora de Recursos Humanos", "Paulina Esquivel"],
   ["Analista de Recursos Humanos", "Ana Sofía Dávila"],
@@ -21,7 +29,18 @@ const OVERRIDES_RAW: ReadonlyArray<readonly [string, string]> = [
   ["Community Manager", "Mariana Garza"],
   ["Coordinadora de Compras y Logística", "Vanessa Uresti"],
   ["Gerente Comercial Concepts", "Paulina Vázquez"],
-  ["Project Manager", "Luis Reyes"],
+];
+
+/**
+ * Overrides por clave de posición (S22, S34, etc.).
+ * Más específicos que por puesto — útil cuando hay varias posiciones con el
+ * mismo nombre.
+ */
+const POR_CLAVE_RAW: ReadonlyArray<readonly [string, string]> = [
+  ["S22", "Luis Reyes"],         // Project Manager
+  ["S34", "Luis Gomez"],          // Project Manager
+  ["S118", "Mauricio Mendoza"],   // Project Manager
+  ["S95", "N/A"],                 // Project Manager — vacante
 ];
 
 /** Normaliza un puesto para comparación: lowercase + sin acentos + 1 espacio. */
@@ -35,15 +54,25 @@ function normalizePuesto(puesto: string): string {
 }
 
 const NOMBRE_POR_PUESTO = new Map<string, string>(
-  OVERRIDES_RAW.map(([puesto, nombre]) => [normalizePuesto(puesto), nombre]),
+  POR_PUESTO_RAW.map(([puesto, nombre]) => [normalizePuesto(puesto), nombre]),
+);
+
+const NOMBRE_POR_CLAVE = new Map<string, string>(
+  POR_CLAVE_RAW.map(([clave, nombre]) => [clave.trim().toUpperCase(), nombre]),
 );
 
 /**
  * Devuelve el nombre que se debe mostrar para una posición.
- * Si hay un override registrado para ese puesto, devuelve el override.
- * Si no, devuelve el nombre original del API.
+ * Orden de precedencia: clave > puesto > API original.
  */
-export function resolverEmpleado(puesto: string, empleadoApi: string): string {
-  const override = NOMBRE_POR_PUESTO.get(normalizePuesto(puesto));
-  return override ?? empleadoApi;
+export function resolverEmpleado(
+  clave: string,
+  puesto: string,
+  empleadoApi: string,
+): string {
+  const porClave = NOMBRE_POR_CLAVE.get(clave.trim().toUpperCase());
+  if (porClave) return porClave;
+  const porPuesto = NOMBRE_POR_PUESTO.get(normalizePuesto(puesto));
+  if (porPuesto) return porPuesto;
+  return empleadoApi;
 }
