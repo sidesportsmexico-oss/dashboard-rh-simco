@@ -1,8 +1,6 @@
 import { Suspense } from "react";
-import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
 import { PageHeader } from "@/components/page-header";
-import { formatNumber } from "@/lib/utils";
 import {
   getHeadcountReporte,
   resumenHeadcount,
@@ -81,36 +79,17 @@ async function Content() {
 
       <HeadcountKpisClient
         posiciones={hcResumen.total}
-        hintPosiciones="Plantilla actual"
+        hintPosiciones="Plantilla actual · click para organigrama"
+        coberturaPct={Math.round(cobertura)}
+        vacantesAbiertas={vacantesAbiertas2026}
         vacantes2026={vacResumen.vacantes2026}
-        hintVacantes={`${vacantesAbiertas2026} abiertas · ${vacResumen.vacantes2026 - vacantesAbiertas2026} cerradas`}
+        hintVacantes="Click para ver detalle"
+        vacantesCerradas={vacResumen.vacantes2026 - vacantesAbiertas2026}
         jerarquias={jerarquias}
         organigrama={organigrama}
         vacantes={vacantes2026List}
       />
 
-      <SectionCard
-        title="Cobertura de plantilla"
-        description="Posiciones ocupadas vs estructura total (ocupadas + abiertas)"
-      >
-        <div className="flex items-center gap-6">
-          <div className="flex-1">
-            <div className="h-3 bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--color-accent-teal)] to-[var(--color-accent-blue)]"
-                style={{ width: `${cobertura}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-[var(--color-text-dim)] mt-2 tabular-nums">
-              <span>{formatNumber(hcResumen.total)} ocupadas</span>
-              <span>{formatNumber(vacantesAbiertas2026)} en reclutamiento</span>
-            </div>
-          </div>
-          <div className="text-3xl font-semibold tabular-nums text-[var(--color-text)]">
-            {totalEstructura > 0 ? `${Math.round(cobertura)}%` : "—"}
-          </div>
-        </div>
-      </SectionCard>
     </div>
   );
 }

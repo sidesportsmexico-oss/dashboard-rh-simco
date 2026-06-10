@@ -26,8 +26,14 @@ export interface VacanteSlim {
 interface Props {
   posiciones: number;
   hintPosiciones: string;
+  /** % de cobertura de plantilla (0-100) — ocupadas / (ocupadas + abiertas). */
+  coberturaPct: number;
+  /** Vacantes 2026 abiertas (no cerradas). Para mostrar el desglose. */
+  vacantesAbiertas: number;
   vacantes2026: number;
   hintVacantes: string;
+  /** Vacantes 2026 cerradas. Para el desglose abiertas/cerradas en la card. */
+  vacantesCerradas: number;
   jerarquias: Jerarquia[];
   organigrama: OrgNode[];
   vacantes: VacanteSlim[];
@@ -36,13 +42,24 @@ interface Props {
 export function HeadcountKpisClient({
   posiciones,
   hintPosiciones,
+  coberturaPct,
+  vacantesAbiertas,
   vacantes2026,
   hintVacantes,
+  vacantesCerradas,
   jerarquias,
   organigrama,
   vacantes,
 }: Props) {
   const [open, setOpen] = useState<"posiciones" | "vacantes" | null>(null);
+
+  const pctAbiertas =
+    vacantes2026 > 0
+      ? Math.round((vacantesAbiertas / vacantes2026) * 100)
+      : 0;
+  const pctCerradas =
+    vacantes2026 > 0 ? Math.round((vacantesCerradas / vacantes2026) * 100) : 0;
+  const estructuraTotal = posiciones + vacantesAbiertas;
 
   return (
     <>
@@ -54,6 +71,11 @@ export function HeadcountKpisClient({
           icon={<Users className="h-5 w-5" />}
           accent="teal"
           onClick={() => setOpen("posiciones")}
+          progress={{
+            pct: coberturaPct,
+            primaryLabel: `${coberturaPct}% cobertura`,
+            secondaryLabel: `${posiciones} / ${estructuraTotal} ocupadas`,
+          }}
         />
         <ClickableBigCard
           label="Vacantes 2026"
@@ -62,6 +84,11 @@ export function HeadcountKpisClient({
           icon={<Briefcase className="h-5 w-5" />}
           accent="orange"
           onClick={() => setOpen("vacantes")}
+          progress={{
+            pct: pctAbiertas,
+            primaryLabel: `${pctAbiertas}% abiertas`,
+            secondaryLabel: `${pctCerradas}% cerradas`,
+          }}
         />
       </div>
 
@@ -113,6 +140,7 @@ function ClickableBigCard({
   icon,
   accent,
   onClick,
+  progress,
 }: {
   label: string;
   value: number;
@@ -120,6 +148,11 @@ function ClickableBigCard({
   icon: React.ReactNode;
   accent: "teal" | "orange";
   onClick: () => void;
+  progress?: {
+    pct: number;
+    primaryLabel: string;
+    secondaryLabel?: string;
+  };
 }) {
   const styles =
     accent === "teal"
@@ -129,6 +162,7 @@ function ClickableBigCard({
           accentColor: "text-[var(--color-accent-teal)]",
           valueColor: "text-[var(--color-text)]",
           hintColor: "text-[var(--color-text-dim)]",
+          barFill: "bg-[var(--color-accent-teal)]",
         }
       : {
           border: "border-[var(--color-accent-orange)]/30",
@@ -136,6 +170,7 @@ function ClickableBigCard({
           accentColor: "text-[var(--color-accent-orange)]",
           valueColor: "text-[var(--color-text)]",
           hintColor: "text-[var(--color-accent-orange)]/70",
+          barFill: "bg-[var(--color-accent-orange)]",
         };
 
   return (
@@ -157,6 +192,28 @@ function ClickableBigCard({
       >
         {formatNumber(value)}
       </p>
+
+      {progress && (
+        <div className="space-y-1.5">
+          <div className="h-1.5 bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${styles.barFill}`}
+              style={{ width: `${Math.min(Math.max(progress.pct, 0), 100)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] tabular-nums">
+            <span className={`font-medium ${styles.accentColor}`}>
+              {progress.primaryLabel}
+            </span>
+            {progress.secondaryLabel && (
+              <span className="text-[var(--color-text-dim)]">
+                {progress.secondaryLabel}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <p className={`text-xs ${styles.hintColor}`}>{hint}</p>
         <span
