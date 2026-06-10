@@ -5,10 +5,10 @@ import { useState } from "react";
 import { formatNumber } from "@/lib/utils";
 import { Modal } from "@/components/modal";
 import {
-  OrganigramaTree,
   JerarquiasResumen,
   VacantesTableModal,
 } from "@/components/organigrama-tree";
+import { OrgChart } from "@/components/org-chart";
 import type { OrgNode, Jerarquia } from "@/lib/potentor/organigrama";
 
 /** Shape mínimo que necesita la tabla del modal — evita serializar HTML pesado al cliente. */
@@ -70,17 +70,20 @@ export function HeadcountKpisClient({
         onClose={() => setOpen(null)}
         title="Organigrama SIMCO"
         subtitle={`Posiciones por nivel jerárquico · ${posiciones} empleados en plantilla`}
-        size="xl"
+        size="full"
       >
         <JerarquiasResumen jerarquias={jerarquias} />
-        <div className="border-t border-[var(--color-border-subtle)] pt-4">
-          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3 flex items-baseline justify-between">
-            <span>Árbol organizacional</span>
+        <div className="border-t border-[var(--color-border-subtle)] pt-6">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1 flex items-baseline justify-between">
+            <span>Estructura organizacional</span>
             <span className="text-xs font-normal text-[var(--color-text-dim)]">
-              Click en chevron para expandir/colapsar
+              Click en cualquier card con chevron para expandir reportes
             </span>
           </h3>
-          <OrganigramaTree nodos={organigrama} defaultExpandLevel={2} />
+          <p className="text-xs text-[var(--color-text-dim)] mb-5">
+            CEO destacado en teal · vacantes en naranja punteado
+          </p>
+          <OrgChart nodos={organigrama} defaultExpandDepth={2} />
         </div>
       </Modal>
 
