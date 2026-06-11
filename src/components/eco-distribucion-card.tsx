@@ -10,6 +10,13 @@ interface Props {
   reporte: EcoReporte;
   /** Si true, agrega el badge con el índice global arriba a la derecha. */
   showIndice?: boolean;
+  /** Título del card. Default: "Distribución global de respuestas". */
+  title?: string;
+  /**
+   * Descripción del card. Default: "X% de respuestas favorables (Op1 + Op2)"
+   * (calculada del reporte).
+   */
+  description?: string;
   className?: string;
 }
 
@@ -24,6 +31,8 @@ interface Props {
 export function EcoDistribucionCard({
   reporte,
   showIndice = false,
+  title,
+  description,
   className,
 }: Props) {
   const dist = distribucionGlobal(reporte);
@@ -31,8 +40,11 @@ export function EcoDistribucionCard({
 
   return (
     <SectionCard
-      title="Distribución global de respuestas"
-      description={`${favPct.toFixed(0)}% de respuestas favorables (Op1 + Op2)`}
+      title={title ?? "Distribución global de respuestas"}
+      description={
+        description ??
+        `${favPct.toFixed(0)}% de respuestas favorables (Op1 + Op2)`
+      }
       className={className}
       action={
         showIndice ? (

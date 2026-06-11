@@ -184,6 +184,8 @@ async function OverviewContent() {
       <EcoDistribucionCard
         reporte={ecoReporte202606Simco}
         showIndice
+        title="ECO"
+        description="Distribución global de respuestas · Junio 2026 — SIMCO + CONCEPTS"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
