@@ -23,7 +23,7 @@ import {
 } from "@/lib/potentor/diagnostico";
 import { cn, formatPercent } from "@/lib/utils";
 
-export const revalidate = 120;
+export const revalidate = 60;
 
 // Metadata de las 3 encuestas que el CEO ve en la UI de Potentor.
 // La data viene de la pantalla /diagnostico_clima_organizacional manualmente

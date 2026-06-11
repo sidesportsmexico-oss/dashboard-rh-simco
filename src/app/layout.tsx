@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { SimcoLogo } from "@/components/simco-logo";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
         <main className="md:pl-64">
           <div className="px-6 md:px-10 py-8 max-w-7xl mx-auto">{children}</div>
         </main>
+        <AutoRefresh intervalMs={60_000} />
       </body>
     </html>
   );

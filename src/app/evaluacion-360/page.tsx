@@ -9,7 +9,7 @@ import {
   type ProcesoDesempeno,
 } from "@/lib/potentor/desempeno";
 
-export const revalidate = 120;
+export const revalidate = 60;
 
 function isOk(v: unknown): v is ProcesoDesempeno[] {
   return Array.isArray(v);

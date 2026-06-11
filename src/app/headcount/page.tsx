@@ -17,7 +17,7 @@ import {
 } from "@/lib/potentor/organigrama";
 import { HeadcountKpisClient } from "@/components/headcount-kpis-client";
 
-export const revalidate = 120;
+export const revalidate = 60;
 
 async function Content() {
   const [hcRes, vacRes, jerRes, orgRes, cierreRes] = await Promise.allSettled([
