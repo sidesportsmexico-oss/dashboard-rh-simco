@@ -2,20 +2,15 @@ import { ClipboardList, TrendingUp, TrendingDown, ExternalLink } from "lucide-re
 import { SectionCard } from "@/components/section-card";
 import { PageHeader } from "@/components/page-header";
 import { EcoRadarChart } from "@/components/eco-radar-chart";
-import {
-  EcoDistribucionBar,
-  EcoDistribucionLegend,
-} from "@/components/eco-distribucion-bar";
+import { EcoDistribucionCard } from "@/components/eco-distribucion-card";
 import { EcoMacroCard } from "@/components/eco-macro-card";
 import { ecoReporte202606Simco } from "@/data/eco-2026-06-simco";
 import {
   topMejorEvaluadas,
   topPeorEvaluadas,
-  distribucionGlobal,
   macroParaRadar,
   statsReporte,
   colorByScore,
-  favorablesPct,
 } from "@/lib/eco/helpers";
 
 export const revalidate = 60;
@@ -23,11 +18,9 @@ export const revalidate = 60;
 export default function Page() {
   const reporte = ecoReporte202606Simco;
   const stats = statsReporte(reporte);
-  const dist = distribucionGlobal(reporte);
   const radarData = macroParaRadar(reporte);
   const top5 = topMejorEvaluadas(reporte, 5);
   const bottom5 = topPeorEvaluadas(reporte, 5);
-  const favPct = favorablesPct(dist);
 
   const fechaFmt = new Date(reporte.fecha).toLocaleDateString("es-MX", {
     day: "numeric",
@@ -65,38 +58,7 @@ export default function Page() {
           </p>
         </div>
 
-        <SectionCard
-          title="Distribución global de respuestas"
-          description={`${favPct.toFixed(0)}% de respuestas favorables (Op1 + Op2)`}
-          className="lg:col-span-2"
-        >
-          <div className="space-y-4">
-            <EcoDistribucionBar dist={dist} height={32} />
-            <EcoDistribucionLegend />
-            <div className="grid grid-cols-4 gap-3 pt-2 border-t border-[var(--color-border-subtle)]">
-              {(
-                [
-                  ["op1", "Op. 1", "Totalmente de acuerdo"],
-                  ["op2", "Op. 2", "De acuerdo"],
-                  ["op3", "Op. 3", "En desacuerdo"],
-                  ["op4", "Op. 4", "Totalmente en desacuerdo"],
-                ] as const
-              ).map(([k, label, desc]) => (
-                <div key={k} className="text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-dim)]">
-                    {label}
-                  </p>
-                  <p className="text-2xl font-semibold tabular-nums text-[var(--color-text)] mt-1">
-                    {dist[k].toFixed(0)}%
-                  </p>
-                  <p className="text-[10px] text-[var(--color-text-dim)] mt-0.5 line-clamp-1">
-                    {desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </SectionCard>
+        <EcoDistribucionCard reporte={reporte} className="lg:col-span-2" />
       </div>
 
       {/* RADAR de las 6 macro-dimensiones */}

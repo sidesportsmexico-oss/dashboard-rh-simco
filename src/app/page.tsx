@@ -23,23 +23,12 @@ import {
 } from "@/lib/potentor/headcount";
 import { getEmpresaInfo } from "@/lib/potentor/empresa";
 import { ecoReporte202606Simco } from "@/data/eco-2026-06-simco";
+import { EcoDistribucionCard } from "@/components/eco-distribucion-card";
 import { getJerarquias, getOrganigrama } from "@/lib/potentor/organigrama";
 import { PipelineMensualChart } from "@/components/pipeline-mensual-chart";
 
 export const revalidate = 60;
 
-function EcoKpi() {
-  const reporte = ecoReporte202606Simco;
-  return (
-    <KpiCard
-      label="ECO Junio 2026"
-      value={reporte.indiceGlobal}
-      hint="Clima · SIMCO + CONCEPTS"
-      icon={<ClipboardList className="h-4 w-4" />}
-      tone={reporte.indiceGlobal >= 75 ? "teal" : "warning"}
-    />
-  );
-}
 
 async function OverviewContent() {
   const [
@@ -129,7 +118,7 @@ async function OverviewContent() {
         />
       ))}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCardClickable
           label="Posiciones SIMCO"
           value={hcResumen.total}
@@ -184,7 +173,6 @@ async function OverviewContent() {
           )}
         </KpiCardClickable>
 
-        <EcoKpi />
         <KpiCard
           label="Evaluación 360"
           value="—"
@@ -192,6 +180,11 @@ async function OverviewContent() {
           icon={<Target className="h-4 w-4" />}
         />
       </div>
+
+      <EcoDistribucionCard
+        reporte={ecoReporte202606Simco}
+        showIndice
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SectionCard
@@ -281,8 +274,8 @@ function OverviewSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
       <div className="h-9 w-48 bg-[var(--color-bg-elevated)] rounded" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
             className="h-32 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)]"
