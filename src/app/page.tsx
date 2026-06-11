@@ -22,43 +22,23 @@ import {
   resumenHeadcount,
 } from "@/lib/potentor/headcount";
 import { getEmpresaInfo } from "@/lib/potentor/empresa";
-import {
-  getEcoResultados,
-  compararEncuestas,
-} from "@/lib/potentor/diagnostico";
+import { ecoReporte202606Simco } from "@/data/eco-2026-06-simco";
 import { getJerarquias, getOrganigrama } from "@/lib/potentor/organigrama";
 import { PipelineMensualChart } from "@/components/pipeline-mensual-chart";
 
 export const revalidate = 60;
 
-async function EcoKpi() {
-  try {
-    const resp = await getEcoResultados();
-    const encuestas = compararEncuestas(resp.data ?? []);
-    const ecoSimco = encuestas.find((e) => e.def.id === "eco_2025_simco");
-    return (
-      <KpiCard
-        label="IP Corporativo 2025"
-        value={
-          ecoSimco?.promedioIp != null
-            ? ecoSimco.promedioIp.toFixed(1)
-            : "—"
-        }
-        hint="Índice de Potencial · ECO pendiente"
-        icon={<ClipboardList className="h-4 w-4" />}
-      />
-    );
-  } catch {
-    return (
-      <KpiCard
-        label="IP Corporativo 2025"
-        value="—"
-        hint="Error al cargar"
-        tone="warning"
-        icon={<ClipboardList className="h-4 w-4" />}
-      />
-    );
-  }
+function EcoKpi() {
+  const reporte = ecoReporte202606Simco;
+  return (
+    <KpiCard
+      label="ECO Junio 2026"
+      value={reporte.indiceGlobal}
+      hint={`Clima Organizacional ${reporte.organizacion}`}
+      icon={<ClipboardList className="h-4 w-4" />}
+      tone={reporte.indiceGlobal >= 75 ? "teal" : "warning"}
+    />
+  );
 }
 
 async function OverviewContent() {
@@ -204,11 +184,7 @@ async function OverviewContent() {
           )}
         </KpiCardClickable>
 
-        <Suspense
-          fallback={<KpiCard label="IP Corporativo 2025" value="…" />}
-        >
-          <EcoKpi />
-        </Suspense>
+        <EcoKpi />
         <KpiCard
           label="Evaluación 360"
           value="—"
