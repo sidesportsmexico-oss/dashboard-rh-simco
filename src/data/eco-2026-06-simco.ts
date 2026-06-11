@@ -1,18 +1,25 @@
 import type { EcoReporte } from "@/lib/eco/types";
 
 /**
- * Reporte ECO de SIMCo generado el 11 de junio de 2026.
+ * Reporte ECO generado el 11 de junio de 2026.
+ *
+ * IMPORTANTE: este reporte aglomera DOS audiencias en un mismo diagnóstico:
+ *   - SIMCO   = personal corporativo
+ *   - CONCEPTS = personal operativo de restaurantes (Batbox + Mulligans)
+ *
+ * Los % son el promedio combinado de ambos grupos. Si en el futuro Potentor
+ * entrega los reportes separados (uno por audiencia), modelar cada uno como
+ * archivo distinto y armar la vista comparativa.
+ *
  * Fuente: /Users/macbook/Downloads/Diagnóstico de Clima Organizacional.pdf
  *         https://campus.potentor.com.mx/eco/reporte/133
  *
- * Captura manual a partir del PDF entregado por Potentor (no hay endpoint
- * REST para extraer estos datos). Cuando se cierre el próximo ciclo, se
- * agrega otro archivo eco-YYYY-MM-org.ts con la misma forma.
+ * Captura manual desde el PDF (no hay endpoint REST que entregue estos datos).
  */
 export const ecoReporte202606Simco: EcoReporte = {
-  id: "eco-2026-06-simco",
-  titulo: "ECO Junio 2026 — SIMCo",
-  organizacion: "SIMCo",
+  id: "eco-2026-06-grupo",
+  titulo: "ECO Junio 2026 — SIMCO + CONCEPTS",
+  organizacion: "SIMCO + CONCEPTS",
   fecha: "2026-06-11",
   year: 2026,
   month: 6,

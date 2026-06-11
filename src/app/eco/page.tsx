@@ -39,9 +39,10 @@ export default function Page() {
     <div className="space-y-8">
       <PageHeader
         title="Diagnóstico de Clima Organizacional"
-        subtitle={`${reporte.organizacion} · ${fechaFmt}`}
+        subtitle={`${reporte.organizacion} · Reporte ${fechaFmt}`}
         tags={[
           "Vista CEO",
+          "Corp + Restaurantes",
           `${stats.totalItems} preguntas`,
           `${stats.totalMacros} dimensiones`,
         ]}

@@ -34,7 +34,7 @@ function EcoKpi() {
     <KpiCard
       label="ECO Junio 2026"
       value={reporte.indiceGlobal}
-      hint={`Clima Organizacional ${reporte.organizacion}`}
+      hint="Clima · SIMCO + CONCEPTS"
       icon={<ClipboardList className="h-4 w-4" />}
       tone={reporte.indiceGlobal >= 75 ? "teal" : "warning"}
     />
