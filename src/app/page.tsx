@@ -29,7 +29,7 @@ import {
 import { getJerarquias, getOrganigrama } from "@/lib/potentor/organigrama";
 import { PipelineMensualChart } from "@/components/pipeline-mensual-chart";
 
-export const revalidate = 600;
+export const revalidate = 120;
 
 async function EcoKpi() {
   try {

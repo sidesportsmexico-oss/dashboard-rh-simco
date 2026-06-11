@@ -13,7 +13,7 @@ import {
   isVacante2026,
 } from "@/lib/potentor/reclutamiento";
 
-export const revalidate = 600;
+export const revalidate = 120;
 
 async function ReclutamientoContent() {
   let vacantes;
