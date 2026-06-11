@@ -3,6 +3,7 @@ import { SectionCard } from "@/components/section-card";
 import { PageHeader } from "@/components/page-header";
 import { EcoRadarChart } from "@/components/eco-radar-chart";
 import { EcoDistribucionCard } from "@/components/eco-distribucion-card";
+import { EcoEscalaIndice } from "@/components/eco-escala-indice";
 import { EcoMacroCard } from "@/components/eco-macro-card";
 import { ecoReporte202606Simco } from "@/data/eco-2026-06-simco";
 import {
@@ -43,19 +44,34 @@ export default function Page() {
 
       {/* HERO: Índice global + distribución */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 rounded-2xl border border-[var(--color-accent-teal)]/35 bg-[var(--color-bg-card)] p-8 flex flex-col items-center justify-center text-center shadow-[0_0_42px_-20px_var(--color-accent-teal)]">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent-teal)]">
-            Índice de Clima Organizacional
-          </p>
-          <p className="text-7xl font-semibold tracking-tight tabular-nums text-[var(--color-text)] my-3">
-            {reporte.indiceGlobal}
-            <span className="text-3xl text-[var(--color-text-dim)] ml-1">%</span>
-          </p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-2 max-w-xs">
-            Promedio ponderado de las {stats.totalMacros} macro-dimensiones,{" "}
-            {stats.totalSubdims} sub-dimensiones y {stats.totalItems} preguntas
-            del reporte.
-          </p>
+        <div className="lg:col-span-1 rounded-2xl border border-[var(--color-accent-teal)]/35 bg-[var(--color-bg-card)] p-7 flex flex-col items-center justify-between gap-4 text-center shadow-[0_0_42px_-20px_var(--color-accent-teal)]">
+          <div className="flex flex-col items-center">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent-teal)]">
+              Índice de Clima Organizacional
+            </p>
+            <p className="text-7xl font-semibold tracking-tight tabular-nums text-[var(--color-text)] mt-2 mb-1">
+              {reporte.indiceGlobal}
+              <span className="text-3xl text-[var(--color-text-dim)] ml-1">
+                %
+              </span>
+            </p>
+          </div>
+
+          <EcoEscalaIndice valor={reporte.indiceGlobal} />
+
+          <div className="text-xs text-[var(--color-text-muted)] space-y-2 max-w-xs">
+            <p className="leading-relaxed">
+              Score global que resume la salud del clima laboral en una sola
+              cifra del 0 al 100. Lo calcula Potentor ponderando todas las
+              respuestas: <strong>Op.1</strong> pesa 100%, <strong>Op.2</strong>{" "}
+              ~67%, <strong>Op.3</strong> ~33%, <strong>Op.4</strong> 0%.
+            </p>
+            <p className="text-[10px] text-[var(--color-text-dim)] pt-2 border-t border-[var(--color-border-subtle)]">
+              Promedio ponderado de las {stats.totalMacros} macro-dimensiones,{" "}
+              {stats.totalSubdims} sub-dimensiones y {stats.totalItems}{" "}
+              preguntas del reporte.
+            </p>
+          </div>
         </div>
 
         <EcoDistribucionCard reporte={reporte} className="lg:col-span-2" />
