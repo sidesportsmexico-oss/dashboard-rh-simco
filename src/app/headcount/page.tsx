@@ -34,6 +34,32 @@ import {
   topMotivos,
   indiceRotacion,
 } from "@/lib/bajas/helpers";
+import type { BajaBase } from "@/lib/bajas/types";
+
+/**
+ * Cuenta bajas de un año hasta cierto mes inclusive (Ene = 1).
+ * Útil para comparativos YTD vs mismo periodo del año anterior.
+ */
+function countBajasHastaMes(
+  bajas: ReadonlyArray<BajaBase>,
+  year: number,
+  mesMax: number,
+): number {
+  let count = 0;
+  for (const b of bajas) {
+    const fecha = b.fecha_salida ?? "";
+    const y = Number(fecha.slice(0, 4));
+    const m = Number(fecha.slice(5, 7));
+    if (y === year && m >= 1 && m <= mesMax) count++;
+  }
+  return count;
+}
+
+/** Delta porcentual seguro. Devuelve null si la base es 0. */
+function deltaPct(actual: number, base: number): number | null {
+  if (base <= 0) return null;
+  return ((actual - base) / base) * 100;
+}
 
 export const revalidate = 60;
 
@@ -148,6 +174,14 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
   const total2025 = suc2025.length + corp2025.length;
   const total2026 = suc2026.length + corp2026.length;
 
+  // Comparativos YoY justos: 2026 es YTD (hoy es junio),
+  // así que comparamos contra el mismo periodo de 2025 (Ene-Jun).
+  const HOY_MES = 6; // junio 2026 — actualizar al cierre del año
+  const suc2025YTD = countBajasHastaMes(bajasSucursales, 2025, HOY_MES);
+  const corp2025YTD = countBajasHastaMes(bajasCorporativo, 2025, HOY_MES);
+  const sucDeltaPct = deltaPct(suc2026.length, suc2025YTD);
+  const corpDeltaPct = deltaPct(corp2026.length, corp2025YTD);
+
   // Índices de rotación (% bajas vs plantilla)
   const rot2025 = indiceRotacion(total2025, plantilla);
   const rot2026 = indiceRotacion(total2026, plantilla);
@@ -225,36 +259,26 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
         />
       </div>
 
-      {/* Sub-KPIs: desglose Sucursales vs Corporativo */}
+      {/* Sub-KPIs: desglose Sucursales vs Corporativo con delta YoY YTD */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-accent-orange)] font-medium">
-              Bajas Sucursales · 2025+2026
-            </p>
-            <p className="text-3xl font-semibold tabular-nums text-[var(--color-text)] mt-1">
-              {allSuc.length}
-            </p>
-            <p className="text-[11px] text-[var(--color-text-dim)] mt-1">
-              {suc2025.length} en 2025 · {suc2026.length} en 2026
-            </p>
-          </div>
-          <UserMinus className="h-6 w-6 text-[var(--color-accent-orange)] opacity-60" />
-        </div>
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-accent-blue)] font-medium">
-              Bajas Corporativo · 2025+2026
-            </p>
-            <p className="text-3xl font-semibold tabular-nums text-[var(--color-text)] mt-1">
-              {allCorp.length}
-            </p>
-            <p className="text-[11px] text-[var(--color-text-dim)] mt-1">
-              {corp2025.length} en 2025 · {corp2026.length} en 2026
-            </p>
-          </div>
-          <UserMinus className="h-6 w-6 text-[var(--color-accent-blue)] opacity-60" />
-        </div>
+        <RotacionSubCard
+          label="Bajas Sucursales · 2025+2026"
+          total={allSuc.length}
+          n2025={suc2025.length}
+          n2026={suc2026.length}
+          base2025YTD={suc2025YTD}
+          deltaPct={sucDeltaPct}
+          color="orange"
+        />
+        <RotacionSubCard
+          label="Bajas Corporativo · 2025+2026"
+          total={allCorp.length}
+          n2025={corp2025.length}
+          n2026={corp2026.length}
+          base2025YTD={corp2025YTD}
+          deltaPct={corpDeltaPct}
+          color="blue"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -356,5 +380,82 @@ export default function Page() {
     >
       <Content />
     </Suspense>
+  );
+}
+
+/**
+ * Sub-card de desglose Sucursales / Corporativo con delta YoY YTD.
+ *
+ * Para el delta: 2026 es YTD (mid-año), así que se compara contra
+ * el mismo periodo del año anterior (Ene-Jun 2025) — sólo así el %
+ * es interpretable. El total grande sigue siendo 2025+2026 acumulado.
+ */
+function RotacionSubCard({
+  label,
+  total,
+  n2025,
+  n2026,
+  base2025YTD,
+  deltaPct,
+  color,
+}: {
+  label: string;
+  total: number;
+  n2025: number;
+  n2026: number;
+  base2025YTD: number;
+  deltaPct: number | null;
+  color: "orange" | "blue";
+}) {
+  const accent =
+    color === "orange"
+      ? "text-[var(--color-accent-orange)]"
+      : "text-[var(--color-accent-blue)]";
+
+  // En contexto HR: bajar bajas = bueno (verde). Subir = malo (rojo).
+  const isDown = deltaPct !== null && deltaPct < 0;
+  const isUp = deltaPct !== null && deltaPct > 0;
+  const deltaColor = isDown
+    ? "text-[var(--color-accent-teal)] border-[var(--color-accent-teal)]/35 bg-[var(--color-accent-teal)]/10"
+    : isUp
+      ? "text-[var(--color-accent-red)] border-[var(--color-accent-red)]/35 bg-[var(--color-accent-red)]/10"
+      : "text-[var(--color-text-dim)] border-[var(--color-border-subtle)] bg-transparent";
+  const arrow = isDown ? "↓" : isUp ? "↑" : "→";
+  const deltaTxt =
+    deltaPct === null
+      ? "Sin base 2025"
+      : `${arrow} ${Math.abs(deltaPct).toFixed(0)}%`;
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className={`text-[11px] uppercase tracking-[0.14em] ${accent} font-medium`}>
+          {label}
+        </p>
+        <p className="text-3xl font-semibold tabular-nums text-[var(--color-text)] mt-1">
+          {total}
+        </p>
+        <p className="text-[11px] text-[var(--color-text-dim)] mt-1">
+          {n2025} en 2025 · {n2026} en 2026
+        </p>
+        <p className="text-[10px] text-[var(--color-text-dim)] mt-2 italic">
+          {n2026} en 2026 YTD vs {base2025YTD} mismo periodo 2025
+        </p>
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <UserMinus
+          className={`h-6 w-6 ${accent} opacity-60`}
+        />
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums ${deltaColor}`}
+          title="2026 YTD vs mismo periodo 2025"
+        >
+          {deltaTxt}
+        </span>
+        <span className="text-[9px] text-[var(--color-text-dim)] uppercase tracking-wider">
+          YoY YTD
+        </span>
+      </div>
+    </div>
   );
 }
