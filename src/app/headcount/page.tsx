@@ -331,21 +331,7 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
         </SectionCard>
       </div>
 
-      {/* Bajas Sucursales con tabs */}
-      <SectionCard
-        title="Bajas Sucursales · 2025-2026"
-        description={`${allSuc.length} bajas en el periodo · filtra por sucursal con las pestañas`}
-        action={
-          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent-orange)]">
-            <UserMinus className="h-4 w-4" />
-            Operativo
-          </span>
-        }
-      >
-        <RotacionSucursalesClient bajas={allSuc} />
-      </SectionCard>
-
-      {/* Bajas Corporativo */}
+      {/* Bajas Corporativo (PRIMERO per CEO 2026-06-15) */}
       <SectionCard
         title="Bajas Corporativo · 2025-2026"
         description={`${allCorp.length} bajas en el periodo`}
@@ -361,6 +347,20 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
           modo="departamento"
           emptyMessage="Sin bajas corporativo registradas en 2025-2026."
         />
+      </SectionCard>
+
+      {/* Bajas Sucursales con tabs */}
+      <SectionCard
+        title="Bajas Sucursales · 2025-2026"
+        description={`${allSuc.length} bajas en el periodo · filtra por sucursal con las pestañas`}
+        action={
+          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent-orange)]">
+            <UserMinus className="h-4 w-4" />
+            Operativo
+          </span>
+        }
+      >
+        <RotacionSucursalesClient bajas={allSuc} />
       </SectionCard>
 
       <div className="text-[10px] text-[var(--color-text-dim)] italic text-right">
