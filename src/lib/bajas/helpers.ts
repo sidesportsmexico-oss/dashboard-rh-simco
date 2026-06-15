@@ -55,6 +55,29 @@ export function filtrarPorAnio<T extends BajaBase>(bajas: T[], year: number): T[
   return bajas.filter((b) => yearBaja(b) === year);
 }
 
+/** Filtra por múltiples años (descarta sin fecha). */
+export function filtrarPorAnios<T extends BajaBase>(
+  bajas: T[],
+  years: number[],
+): T[] {
+  const set = new Set(years);
+  return bajas.filter((b) => {
+    const y = yearBaja(b);
+    return y !== null && set.has(y);
+  });
+}
+
+/**
+ * Índice de rotación anual = (bajas año / plantilla promedio) × 100.
+ *
+ * Como no tenemos la plantilla histórica de cada año, usamos la actual
+ * como proxy (limitación documentada). Devuelve 0 si la plantilla es 0.
+ */
+export function indiceRotacion(numBajas: number, plantilla: number): number {
+  if (plantilla <= 0) return 0;
+  return (numBajas / plantilla) * 100;
+}
+
 /** Filtra bajas de sucursales por sucursal específica. */
 export function filtrarPorSucursal(
   bajas: BajaSucursal[],

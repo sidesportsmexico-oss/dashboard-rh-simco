@@ -14,19 +14,33 @@ import {
 interface Props {
   data: {
     mes: string;
-    sucursales: number;
-    corporativo: number;
+    bajas2025: number;
+    bajas2026: number;
   }[];
 }
 
+/**
+ * Comparativo mensual de bajas 2025 vs 2026.
+ * Bars side-by-side por mes (grouped, no stacked).
+ */
 export function RotacionMesChart({ data }: Props) {
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2737" vertical={false} />
-          <XAxis dataKey="mes" stroke="#7a8fa8" fontSize={11} tick={{ fill: "#7a8fa8" }} />
-          <YAxis stroke="#7a8fa8" fontSize={11} allowDecimals={false} tick={{ fill: "#7a8fa8" }} />
+          <XAxis
+            dataKey="mes"
+            stroke="#7a8fa8"
+            fontSize={11}
+            tick={{ fill: "#7a8fa8" }}
+          />
+          <YAxis
+            stroke="#7a8fa8"
+            fontSize={11}
+            allowDecimals={false}
+            tick={{ fill: "#7a8fa8" }}
+          />
           <Tooltip
             cursor={{ fill: "rgba(0, 212, 170, 0.06)" }}
             contentStyle={{
@@ -44,17 +58,16 @@ export function RotacionMesChart({ data }: Props) {
             iconType="circle"
           />
           <Bar
-            dataKey="sucursales"
-            name="Sucursales"
-            stackId="a"
-            fill="#fb923c"
+            dataKey="bajas2025"
+            name="2025"
+            fill="#7a8fa8"
+            radius={[3, 3, 0, 0]}
           />
           <Bar
-            dataKey="corporativo"
-            name="Corporativo"
-            stackId="a"
-            fill="#38bdf8"
-            radius={[4, 4, 0, 0]}
+            dataKey="bajas2026"
+            name="2026"
+            fill="#00d4aa"
+            radius={[3, 3, 0, 0]}
           />
         </BarChart>
       </ResponsiveContainer>

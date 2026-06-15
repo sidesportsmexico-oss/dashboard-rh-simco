@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { LogOut, TrendingDown, UserMinus } from "lucide-react";
+import { LogOut, TrendingDown, UserMinus, UserX, Activity } from "lucide-react";
 import { ErrorBanner } from "@/components/error-banner";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
@@ -29,8 +29,10 @@ import {
 import {
   resumenBajas,
   filtrarPorAnio,
+  filtrarPorAnios,
   bajasPorMes,
   topMotivos,
+  indiceRotacion,
 } from "@/lib/bajas/helpers";
 
 export const revalidate = 60;
@@ -107,7 +109,7 @@ async function Content() {
       />
 
       {/* ─── SECCIÓN ROTACIÓN ─── */}
-      <RotacionSection />
+      <RotacionSection plantilla={hcResumen.total} />
     </div>
   );
 }
@@ -115,40 +117,53 @@ async function Content() {
 /**
  * Sección de Rotación dentro de Head Count.
  *
- * 2 sub-secciones (per CEO):
+ * Solo contempla bajas de **2025 y 2026** (per CEO 2026-06-15).
+ *
+ * 2 sub-secciones:
  *   1. Bajas Sucursales — con tabs General / Mulligans / Batbox
  *   2. Bajas Corporativo — tabla única
  *
- * Plus KPIs arriba y gráfica mensual.
+ * Plus KPIs (Bajas, Voluntarias, Involuntarias, Índice de rotación) y
+ * gráfica comparativa 2025 vs 2026.
  *
  * Fuente: Google Sheet "Bajas SIMCO" (sheet ID 1zThxQQJHFXcl…).
- * Captura manual a TS (no hay API). Ver src/data/bajas-2026.ts.
+ * Captura manual a TS. Ver src/data/bajas-2026.ts.
  */
-function RotacionSection() {
-  const allSuc = bajasSucursales;
-  const allCorp = bajasCorporativo;
+function RotacionSection({ plantilla }: { plantilla: number }) {
+  const ANIOS = [2025, 2026];
+
+  // Filtra todo a 2025+2026
+  const allSuc = filtrarPorAnios(bajasSucursales, ANIOS);
+  const allCorp = filtrarPorAnios(bajasCorporativo, ANIOS);
   const todasBajas = [...allSuc, ...allCorp];
 
-  // Resúmenes globales (todos los años)
+  // Resúmenes 2025+2026
   const resTotal = resumenBajas(todasBajas);
-  const resSuc = resumenBajas(allSuc);
-  const resCorp = resumenBajas(allCorp);
 
-  // 2026 stats
+  // Por año
+  const suc2025 = filtrarPorAnio(allSuc, 2025);
+  const corp2025 = filtrarPorAnio(allCorp, 2025);
   const suc2026 = filtrarPorAnio(allSuc, 2026);
   const corp2026 = filtrarPorAnio(allCorp, 2026);
+  const total2025 = suc2025.length + corp2025.length;
   const total2026 = suc2026.length + corp2026.length;
 
-  // Gráfica mensual 2026 — bajas Sucursales vs Corporativo
-  const mesesSuc = bajasPorMes(allSuc, 2026);
-  const mesesCorp = bajasPorMes(allCorp, 2026);
-  const chartData = mesesSuc.map((m, i) => ({
+  // Índices de rotación (% bajas vs plantilla)
+  const rot2025 = indiceRotacion(total2025, plantilla);
+  const rot2026 = indiceRotacion(total2026, plantilla);
+
+  // Gráfica mensual comparativa 2025 vs 2026 (total bajas)
+  const mesesSuc25 = bajasPorMes(bajasSucursales, 2025);
+  const mesesCorp25 = bajasPorMes(bajasCorporativo, 2025);
+  const mesesSuc26 = bajasPorMes(bajasSucursales, 2026);
+  const mesesCorp26 = bajasPorMes(bajasCorporativo, 2026);
+  const chartData = mesesSuc25.map((m, i) => ({
     mes: m.mes,
-    sucursales: m.count,
-    corporativo: mesesCorp[i].count,
+    bajas2025: m.count + mesesCorp25[i].count,
+    bajas2026: mesesSuc26[i].count + mesesCorp26[i].count,
   }));
 
-  // Top 5 motivos globales
+  // Top 5 motivos del periodo
   const top5Motivos = topMotivos(todasBajas, 5);
 
   return (
@@ -161,43 +176,91 @@ function RotacionSection() {
           </h2>
         </div>
         <p className="text-xs text-[var(--color-text-dim)]">
-          Bajas históricas de SIMCO (Sucursales · Corporativo) — fuente:
+          Bajas de SIMCO (Sucursales · Corporativo) · 2025 y 2026 — fuente:
           Google Sheets &ldquo;Bajas SIMCO&rdquo;
         </p>
       </header>
 
-      {/* KPIs */}
+      {/* KPIs principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Bajas 2026 YTD"
           value={total2026}
-          hint={`${resTotal.total} históricas totales`}
+          hint={`vs ${total2025} en 2025`}
           tone="warning"
           icon={<UserMinus className="h-4 w-4" />}
+          progress={{
+            pct:
+              total2025 + total2026 > 0
+                ? (total2026 / (total2025 + total2026)) * 100
+                : 0,
+            primaryLabel: `${total2026} en 2026`,
+            secondaryLabel: `${total2025} en 2025`,
+          }}
         />
         <KpiCard
-          label="Bajas Sucursales"
-          value={allSuc.length}
-          hint={`${suc2026.length} en 2026 · Batbox/Mulligans/+`}
-        />
-        <KpiCard
-          label="Bajas Corporativo"
-          value={allCorp.length}
-          hint={`${corp2026.length} en 2026`}
-        />
-        <KpiCard
-          label="% Voluntarias"
-          value={`${Math.round(resTotal.pctVoluntarias)}%`}
-          hint={`${resTotal.voluntarias} vol · ${resTotal.involuntarias} invol`}
+          label="Bajas Voluntarias"
+          value={resTotal.voluntarias}
+          hint={`${Math.round(resTotal.pctVoluntarias)}% del periodo 2025-2026`}
           tone="default"
           icon={<TrendingDown className="h-4 w-4" />}
         />
+        <KpiCard
+          label="Bajas Involuntarias"
+          value={resTotal.involuntarias}
+          hint={`${Math.round(100 - resTotal.pctVoluntarias)}% del periodo 2025-2026`}
+          tone="danger"
+          icon={<UserX className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Índice de Rotación"
+          value={`${rot2026.toFixed(1)}%`}
+          hint={`2026 YTD · 2025 fue ${rot2025.toFixed(1)}%`}
+          tone={rot2026 > 25 ? "danger" : rot2026 > 15 ? "warning" : "success"}
+          icon={<Activity className="h-4 w-4" />}
+          trend={{
+            delta: Number((rot2026 - rot2025).toFixed(1)),
+            suffix: " pts",
+          }}
+        />
+      </div>
+
+      {/* Sub-KPIs: desglose Sucursales vs Corporativo */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-accent-orange)] font-medium">
+              Bajas Sucursales · 2025+2026
+            </p>
+            <p className="text-3xl font-semibold tabular-nums text-[var(--color-text)] mt-1">
+              {allSuc.length}
+            </p>
+            <p className="text-[11px] text-[var(--color-text-dim)] mt-1">
+              {suc2025.length} en 2025 · {suc2026.length} en 2026
+            </p>
+          </div>
+          <UserMinus className="h-6 w-6 text-[var(--color-accent-orange)] opacity-60" />
+        </div>
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-accent-blue)] font-medium">
+              Bajas Corporativo · 2025+2026
+            </p>
+            <p className="text-3xl font-semibold tabular-nums text-[var(--color-text)] mt-1">
+              {allCorp.length}
+            </p>
+            <p className="text-[11px] text-[var(--color-text-dim)] mt-1">
+              {corp2025.length} en 2025 · {corp2026.length} en 2026
+            </p>
+          </div>
+          <UserMinus className="h-6 w-6 text-[var(--color-accent-blue)] opacity-60" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SectionCard
-          title="Bajas mensuales 2026"
-          description="Sucursales vs Corporativo · Ene a Dic"
+          title="Bajas mensuales · 2025 vs 2026"
+          description={`Comparativo mensual del total de bajas por año · plantilla actual = ${plantilla}`}
           className="lg:col-span-2"
         >
           <RotacionMesChart data={chartData} />
@@ -246,8 +309,8 @@ function RotacionSection() {
 
       {/* Bajas Sucursales con tabs */}
       <SectionCard
-        title="Bajas Sucursales"
-        description={`${allSuc.length} bajas históricas · filtra por sucursal con las pestañas`}
+        title="Bajas Sucursales · 2025-2026"
+        description={`${allSuc.length} bajas en el periodo · filtra por sucursal con las pestañas`}
         action={
           <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent-orange)]">
             <UserMinus className="h-4 w-4" />
@@ -260,8 +323,8 @@ function RotacionSection() {
 
       {/* Bajas Corporativo */}
       <SectionCard
-        title="Bajas Corporativo"
-        description={`${allCorp.length} bajas históricas de personal corporativo`}
+        title="Bajas Corporativo · 2025-2026"
+        description={`${allCorp.length} bajas en el periodo`}
         action={
           <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent-blue)]">
             <UserMinus className="h-4 w-4" />
@@ -272,12 +335,13 @@ function RotacionSection() {
         <BajasTable
           bajas={allCorp}
           modo="departamento"
-          emptyMessage="Sin bajas corporativo registradas."
+          emptyMessage="Sin bajas corporativo registradas en 2025-2026."
         />
       </SectionCard>
 
       <div className="text-[10px] text-[var(--color-text-dim)] italic text-right">
-        Captura del Google Sheet al 2026-06-11 · 193 bajas históricas total
+        Captura del Google Sheet al 2026-06-11 · solo 2025-2026 visibles ·
+        Índice = bajas / plantilla actual ({plantilla})
       </div>
     </section>
   );
