@@ -103,35 +103,29 @@ export function RotacionClient({ plantillaCorp, plantillaSuc }: Props) {
     };
   }, [esAmbos, yearSel, total2025, total2026]);
 
-  // Índices por empresa: cuando selecciona un año específico, ese año es el actual
-  const { corpRotActual, corpRotBase, sucRotActual, sucRotBase, indiceHint } =
-    useMemo(() => {
-      // Por defecto (Ambos): 2026 YTD vs 2025
-      // Selección 2025: 2025 vs nada (sin comparación)
-      // Selección 2026: 2026 YTD vs 2025
-      const corp2025 = filtrarPorAnio(bajasCorporativo, 2025);
-      const corp2026 = filtrarPorAnio(bajasCorporativo, 2026);
-      const suc2025 = filtrarPorAnio(bajasSucursales, 2025);
-      const suc2026 = filtrarPorAnio(bajasSucursales, 2026);
+  // Índices por empresa del periodo seleccionado.
+  // Ambos y 2026 muestran 2026 YTD (más reciente). 2025 muestra año completo.
+  // Sin comparativo cruzado per CEO 2026-06-24 — comparar YTD vs año
+  // completo era engañoso.
+  const { corpRotActual, sucRotActual, indiceHint } = useMemo(() => {
+    const corp2025 = filtrarPorAnio(bajasCorporativo, 2025);
+    const corp2026 = filtrarPorAnio(bajasCorporativo, 2026);
+    const suc2025 = filtrarPorAnio(bajasSucursales, 2025);
+    const suc2026 = filtrarPorAnio(bajasSucursales, 2026);
 
-      if (esAmbos || yearSel === 2026) {
-        return {
-          corpRotActual: indiceRotacion(corp2026.length, plantillaCorp),
-          corpRotBase: indiceRotacion(corp2025.length, plantillaCorp),
-          sucRotActual: indiceRotacion(suc2026.length, plantillaSuc),
-          sucRotBase: indiceRotacion(suc2025.length, plantillaSuc),
-          indiceHint: "2026 YTD",
-        };
-      }
-      // yearSel === 2025
+    if (esAmbos || yearSel === 2026) {
       return {
-        corpRotActual: indiceRotacion(corp2025.length, plantillaCorp),
-        corpRotBase: indiceRotacion(corp2026.length, plantillaCorp),
-        sucRotActual: indiceRotacion(suc2025.length, plantillaSuc),
-        sucRotBase: indiceRotacion(suc2026.length, plantillaSuc),
-        indiceHint: "2025",
+        corpRotActual: indiceRotacion(corp2026.length, plantillaCorp),
+        sucRotActual: indiceRotacion(suc2026.length, plantillaSuc),
+        indiceHint: "2026 YTD",
       };
-    }, [esAmbos, yearSel, plantillaCorp, plantillaSuc]);
+    }
+    return {
+      corpRotActual: indiceRotacion(corp2025.length, plantillaCorp),
+      sucRotActual: indiceRotacion(suc2025.length, plantillaSuc),
+      indiceHint: "2025",
+    };
+  }, [esAmbos, yearSel, plantillaCorp, plantillaSuc]);
 
   // Chart siempre comparativo 2025 vs 2026 (no se filtra)
   const chartData = useMemo(() => {
@@ -210,12 +204,16 @@ export function RotacionClient({ plantillaCorp, plantillaSuc }: Props) {
         />
       </div>
 
-      {/* Índices de Rotación separados por empresa */}
+      {/* Índices de Rotación separados por empresa.
+          Solicitud del CEO 2026-06-24: solo mostrar índice del periodo
+          seleccionado, sin comparativo de año completo (engañoso porque
+          2026 va YTD vs 2025 con 12 meses). Si quieren YoY hay que
+          construir comparativo YTD vs mismo periodo 2025 explícito. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KpiCard
           label="Índice Rotación · SIMCO Corporativo"
           value={`${corpRotActual.toFixed(1)}%`}
-          hint={`${indiceHint} · plantilla ${plantillaCorp} · ${esAmbos ? "vs " + corpRotBase.toFixed(1) + "% en 2025" : "vs " + corpRotBase.toFixed(1) + "% en " + (yearSel === 2025 ? 2026 : 2025)}`}
+          hint={`${indiceHint} · plantilla ${plantillaCorp}`}
           tone={
             corpRotActual > 25
               ? "danger"
@@ -224,16 +222,11 @@ export function RotacionClient({ plantillaCorp, plantillaSuc }: Props) {
                 : "success"
           }
           icon={<Activity className="h-4 w-4" />}
-          trend={{
-            delta: Number((corpRotActual - corpRotBase).toFixed(1)),
-            suffix: " pts",
-            inverse: true,
-          }}
         />
         <KpiCard
           label="Índice Rotación · CONCEPTS Sucursales"
           value={`${sucRotActual.toFixed(1)}%`}
-          hint={`${indiceHint} · plantilla ${plantillaSuc} · ${esAmbos ? "vs " + sucRotBase.toFixed(1) + "% en 2025" : "vs " + sucRotBase.toFixed(1) + "% en " + (yearSel === 2025 ? 2026 : 2025)}`}
+          hint={`${indiceHint} · plantilla ${plantillaSuc}`}
           tone={
             sucRotActual > 40
               ? "danger"
@@ -242,11 +235,6 @@ export function RotacionClient({ plantillaCorp, plantillaSuc }: Props) {
                 : "success"
           }
           icon={<Activity className="h-4 w-4" />}
-          trend={{
-            delta: Number((sucRotActual - sucRotBase).toFixed(1)),
-            suffix: " pts",
-            inverse: true,
-          }}
         />
       </div>
 
