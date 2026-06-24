@@ -5,7 +5,13 @@ interface KpiCardProps {
   label: string;
   value: number | string | null | undefined;
   hint?: string;
-  trend?: { delta: number; suffix?: string };
+  /**
+   * Indicador de tendencia (+/- delta).
+   * Por default, delta positivo = verde (mejora), negativo = rojo (peor).
+   * Para KPIs donde bajar es bueno (rotación, churn, errores), pasa
+   * `inverse: true` y los colores se invierten.
+   */
+  trend?: { delta: number; suffix?: string; inverse?: boolean };
   icon?: ReactNode;
   tone?: "default" | "teal" | "blue" | "warning" | "danger" | "success";
   /** Barra de progreso compacta. Si está definida, se renderiza entre el valor y el hint. */
@@ -126,11 +132,13 @@ export function KpiCard({
           <span
             className={cn(
               "font-medium tabular-nums",
-              trend.delta > 0
-                ? "text-[var(--color-accent-teal)]"
-                : trend.delta < 0
-                  ? "text-[var(--color-accent-red)]"
-                  : "text-[var(--color-text-dim)]",
+              (() => {
+                const good = trend.inverse ? trend.delta < 0 : trend.delta > 0;
+                const bad = trend.inverse ? trend.delta > 0 : trend.delta < 0;
+                if (good) return "text-[var(--color-accent-teal)]";
+                if (bad) return "text-[var(--color-accent-red)]";
+                return "text-[var(--color-text-dim)]";
+              })(),
             )}
           >
             {trend.delta > 0 ? "+" : ""}

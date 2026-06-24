@@ -135,7 +135,10 @@ async function Content() {
       />
 
       {/* ─── SECCIÓN ROTACIÓN ─── */}
-      <RotacionSection plantilla={hcResumen.total} />
+      <RotacionSection
+        plantillaCorp={hcResumen.corporativo}
+        plantillaSuc={hcResumen.sucursales}
+      />
     </div>
   );
 }
@@ -155,7 +158,13 @@ async function Content() {
  * Fuente: Google Sheet "Bajas SIMCO" (sheet ID 1zThxQQJHFXcl…).
  * Captura manual a TS. Ver src/data/bajas-2026.ts.
  */
-function RotacionSection({ plantilla }: { plantilla: number }) {
+function RotacionSection({
+  plantillaCorp,
+  plantillaSuc,
+}: {
+  plantillaCorp: number;
+  plantillaSuc: number;
+}) {
   const ANIOS = [2025, 2026];
 
   // Filtra todo a 2025+2026
@@ -184,9 +193,14 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
   const sucDeltaPct = deltaPct(suc2026.length, suc2025YTD);
   const corpDeltaPct = deltaPct(corp2026.length, corp2025YTD);
 
-  // Índices de rotación (% bajas vs plantilla)
-  const rot2025 = indiceRotacion(total2025, plantilla);
-  const rot2026 = indiceRotacion(total2026, plantilla);
+  // Índices de rotación SEPARADOS por empresa (% bajas vs su propia plantilla)
+  // Solicitud del CEO 2026-06-24: split SIMCO Corporativo vs CONCEPTS Sucursales.
+  // Denominadores vienen de Potentor /headcount/reporte clasificados por
+  // departamento === "Sucursales" → CONCEPTS, resto → SIMCO.
+  const corpRot2025 = indiceRotacion(corp2025.length, plantillaCorp);
+  const corpRot2026 = indiceRotacion(corp2026.length, plantillaCorp);
+  const sucRot2025 = indiceRotacion(suc2025.length, plantillaSuc);
+  const sucRot2026 = indiceRotacion(suc2026.length, plantillaSuc);
 
   // Gráfica mensual comparativa 2025 vs 2026 (total bajas)
   const mesesSuc25 = bajasPorMes(bajasSucursales, 2025);
@@ -217,8 +231,8 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
         </p>
       </header>
 
-      {/* KPIs principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPIs principales (cuenta agregada del periodo) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
           label="Bajas 2026 YTD"
           value={total2026}
@@ -248,15 +262,44 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
           tone="danger"
           icon={<UserX className="h-4 w-4" />}
         />
+      </div>
+
+      {/* Índices de Rotación separados por empresa */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KpiCard
-          label="Índice de Rotación"
-          value={`${rot2026.toFixed(1)}%`}
-          hint={`2026 YTD · 2025 fue ${rot2025.toFixed(1)}%`}
-          tone={rot2026 > 25 ? "danger" : rot2026 > 15 ? "warning" : "success"}
+          label="Índice Rotación · SIMCO Corporativo"
+          value={`${corpRot2026.toFixed(1)}%`}
+          hint={`2026 YTD · 2025 fue ${corpRot2025.toFixed(1)}% · plantilla ${plantillaCorp}`}
+          tone={
+            corpRot2026 > 25
+              ? "danger"
+              : corpRot2026 > 15
+                ? "warning"
+                : "success"
+          }
           icon={<Activity className="h-4 w-4" />}
           trend={{
-            delta: Number((rot2026 - rot2025).toFixed(1)),
+            delta: Number((corpRot2026 - corpRot2025).toFixed(1)),
             suffix: " pts",
+            inverse: true,
+          }}
+        />
+        <KpiCard
+          label="Índice Rotación · CONCEPTS Sucursales"
+          value={`${sucRot2026.toFixed(1)}%`}
+          hint={`2026 YTD · 2025 fue ${sucRot2025.toFixed(1)}% · plantilla ${plantillaSuc}`}
+          tone={
+            sucRot2026 > 40
+              ? "danger"
+              : sucRot2026 > 25
+                ? "warning"
+                : "success"
+          }
+          icon={<Activity className="h-4 w-4" />}
+          trend={{
+            delta: Number((sucRot2026 - sucRot2025).toFixed(1)),
+            suffix: " pts",
+            inverse: true,
           }}
         />
       </div>
@@ -286,7 +329,7 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SectionCard
           title="Bajas mensuales · 2025 vs 2026"
-          description={`Comparativo mensual del total de bajas por año · plantilla actual = ${plantilla}`}
+          description={`Comparativo mensual del total de bajas por año · plantilla SIMCO ${plantillaCorp} · CONCEPTS ${plantillaSuc}`}
           className="lg:col-span-2"
         >
           <RotacionMesChart data={chartData} />
@@ -367,7 +410,8 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
 
       <div className="text-[10px] text-[var(--color-text-dim)] italic text-right">
         Captura del Google Sheet al 2026-06-11 · solo 2025-2026 visibles ·
-        Índice = bajas / plantilla actual ({plantilla})
+        Índices = bajas por empresa / plantilla por empresa (Potentor:
+        departamento &ldquo;Sucursales&rdquo; → CONCEPTS, resto → SIMCO)
       </div>
     </section>
   );

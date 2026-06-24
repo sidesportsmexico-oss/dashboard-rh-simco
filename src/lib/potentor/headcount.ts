@@ -34,11 +34,37 @@ export async function getHeadcountReporte(args?: {
 export type HeadcountResumen = {
   total: number;
   conNombre: number; // filas con al menos NOMB no null (descarta placeholders)
+  /** Plantilla operativa: rows con departamento === "Sucursales" (Batbox/Mulligans). */
+  sucursales: number;
+  /** Plantilla corporativa: total - sucursales. */
+  corporativo: number;
 };
 
+/**
+ * Clasificación SIMCO vs CONCEPTS según el campo `departamento` de Potentor:
+ * - departamento === "Sucursales" → CONCEPTS (operativo restaurantes)
+ * - cualquier otro valor → SIMCO (corporativo)
+ *
+ * Decisión del CEO 2026-06-24: usar departamento (no area) como discriminador.
+ */
+function esRowSucursal(r: HeadcountRow): boolean {
+  const depto = String((r as Record<string, unknown>).departamento ?? "")
+    .trim()
+    .toLowerCase();
+  return depto === "sucursales";
+}
+
 export function resumenHeadcount(rows: HeadcountRow[]): HeadcountResumen {
+  let suc = 0;
+  let conNombre = 0;
+  for (const r of rows) {
+    if (esRowSucursal(r)) suc++;
+    if (r.NOMB && String(r.NOMB).trim() !== "") conNombre++;
+  }
   return {
     total: rows.length,
-    conNombre: rows.filter((r) => r.NOMB && String(r.NOMB).trim() !== "").length,
+    conNombre,
+    sucursales: suc,
+    corporativo: rows.length - suc,
   };
 }
