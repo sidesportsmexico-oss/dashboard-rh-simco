@@ -174,9 +174,11 @@ function RotacionSection({ plantilla }: { plantilla: number }) {
   const total2025 = suc2025.length + corp2025.length;
   const total2026 = suc2026.length + corp2026.length;
 
-  // Comparativos YoY justos: 2026 es YTD (hoy es junio),
-  // así que comparamos contra el mismo periodo de 2025 (Ene-Jun).
-  const HOY_MES = 6; // junio 2026 — actualizar al cierre del año
+  // Comparativos YoY justos: el año actual va YTD (parcial),
+  // así que comparamos contra el mismo periodo del año anterior.
+  // Se recalcula en cada revalidate (60s) porque es server component.
+  const hoy = new Date();
+  const HOY_MES = hoy.getMonth() + 1; // 1-12
   const suc2025YTD = countBajasHastaMes(bajasSucursales, 2025, HOY_MES);
   const corp2025YTD = countBajasHastaMes(bajasCorporativo, 2025, HOY_MES);
   const sucDeltaPct = deltaPct(suc2026.length, suc2025YTD);
