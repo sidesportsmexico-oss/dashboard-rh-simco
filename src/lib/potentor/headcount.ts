@@ -68,3 +68,26 @@ export function resumenHeadcount(rows: HeadcountRow[]): HeadcountResumen {
     corporativo: rows.length - suc,
   };
 }
+
+/**
+ * Cuenta posiciones REALMENTE OCUPADAS por jerarquía a partir del headcount.
+ *
+ * El endpoint /sucursal/jerarquias devuelve slots de la estructura (incluye
+ * posiciones vacantes), no personas. Para el modal del organigrama el CEO
+ * quiere ver ocupadas, no slots — esta función nos da eso.
+ *
+ * Retorna mapa { jerarquia (uppercase) → conteo }.
+ */
+export function jerarquiasOcupadasDesdeHeadcount(
+  rows: HeadcountRow[],
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const r of rows) {
+    const j = String((r as Record<string, unknown>).jerarquia ?? "")
+      .trim()
+      .toUpperCase();
+    if (!j) continue;
+    out.set(j, (out.get(j) ?? 0) + 1);
+  }
+  return out;
+}

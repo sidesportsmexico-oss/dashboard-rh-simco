@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import {
   getHeadcountReporte,
   resumenHeadcount,
+  jerarquiasOcupadasDesdeHeadcount,
 } from "@/lib/potentor/headcount";
 import {
   getVacantes,
@@ -48,6 +49,17 @@ async function Content() {
   const hcResumen = resumenHeadcount(headcount);
   const vacResumen = resumenVacantes(vacantes);
 
+  // El endpoint /sucursal/jerarquias devuelve SLOTS de la estructura
+  // (incluye vacantes). Para el modal del organigrama queremos personas
+  // realmente ocupando, así que sobreescribimos cantidad_puestos con el
+  // conteo real desde /headcount/reporte.
+  const jerarquiasOcupadas = jerarquiasOcupadasDesdeHeadcount(headcount);
+  const jerarquiasReales = jerarquias.map((j) => ({
+    ...j,
+    cantidad_puestos:
+      jerarquiasOcupadas.get(j.nombre.trim().toUpperCase()) ?? 0,
+  }));
+
   const vacantesAbiertas2026 = vacResumen.abiertas2026;
   const totalEstructura = hcResumen.total + vacantesAbiertas2026;
   const cobertura =
@@ -86,7 +98,7 @@ async function Content() {
         vacantes2026={vacResumen.vacantes2026}
         hintVacantes="Click para ver detalle"
         vacantesCerradas={vacResumen.vacantes2026 - vacantesAbiertas2026}
-        jerarquias={jerarquias}
+        jerarquias={jerarquiasReales}
         organigrama={organigrama}
         vacantes={vacantes2026List}
       />
