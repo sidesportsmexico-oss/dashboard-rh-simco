@@ -5,6 +5,7 @@ import {
   getHeadcountReporte,
   resumenHeadcount,
   jerarquiasOcupadasDesdeHeadcount,
+  headcountASlim,
 } from "@/lib/potentor/headcount";
 import {
   getVacantes,
@@ -60,6 +61,9 @@ async function Content() {
       jerarquiasOcupadas.get(j.nombre.trim().toUpperCase()) ?? 0,
   }));
 
+  // Slim del headcount para el modal anidado por jerarquía (sin RFC/CURP/etc).
+  const empleadosSlim = headcountASlim(headcount);
+
   const vacantesAbiertas2026 = vacResumen.abiertas2026;
   const totalEstructura = hcResumen.total + vacantesAbiertas2026;
   const cobertura =
@@ -101,6 +105,7 @@ async function Content() {
         jerarquias={jerarquiasReales}
         organigrama={organigrama}
         vacantes={vacantes2026List}
+        empleados={empleadosSlim}
       />
 
       {/* ─── SECCIÓN ROTACIÓN ─── */}

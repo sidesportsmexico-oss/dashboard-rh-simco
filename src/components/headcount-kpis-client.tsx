@@ -7,9 +7,11 @@ import { Modal } from "@/components/modal";
 import {
   JerarquiasResumen,
   VacantesTableModal,
+  EmpleadosPorJerarquiaTable,
 } from "@/components/organigrama-tree";
 import { OrgChart } from "@/components/org-chart";
 import type { OrgNode, Jerarquia } from "@/lib/potentor/organigrama";
+import type { EmpleadoSlim } from "@/lib/potentor/headcount";
 
 /** Shape mínimo que necesita la tabla del modal — evita serializar HTML pesado al cliente. */
 export interface VacanteSlim {
@@ -37,6 +39,8 @@ interface Props {
   jerarquias: Jerarquia[];
   organigrama: OrgNode[];
   vacantes: VacanteSlim[];
+  /** Slim del headcount para el modal anidado por jerarquía. */
+  empleados: EmpleadoSlim[];
 }
 
 export function HeadcountKpisClient({
@@ -50,8 +54,22 @@ export function HeadcountKpisClient({
   jerarquias,
   organigrama,
   vacantes,
+  empleados,
 }: Props) {
   const [open, setOpen] = useState<"posiciones" | "vacantes" | null>(null);
+  /**
+   * Jerarquía seleccionada para el modal anidado (e.g. "DIRECTOR").
+   * Null = sin selección. Usa el nombre tal cual viene del endpoint
+   * (puede ser "DIRECTOR", "GERENTE", "Unidad de negocio"…).
+   */
+  const [jerarquiaSel, setJerarquiaSel] = useState<string | null>(null);
+
+  const empleadosFiltrados =
+    jerarquiaSel == null
+      ? []
+      : empleados.filter(
+          (e) => e.jerarquia.toUpperCase() === jerarquiaSel.toUpperCase(),
+        );
 
   const pctAbiertas =
     vacantes2026 > 0
@@ -99,7 +117,10 @@ export function HeadcountKpisClient({
         subtitle={`Posiciones por nivel jerárquico · ${posiciones} empleados en plantilla`}
         size="full"
       >
-        <JerarquiasResumen jerarquias={jerarquias} />
+        <JerarquiasResumen
+          jerarquias={jerarquias}
+          onSelect={(j) => setJerarquiaSel(j)}
+        />
         <div className="border-t border-[var(--color-border-subtle)] pt-6">
           <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1 flex items-baseline justify-between">
             <span>Estructura organizacional</span>
@@ -128,6 +149,17 @@ export function HeadcountKpisClient({
         ) : (
           <VacantesTableModal vacantes={vacantes} />
         )}
+      </Modal>
+
+      {/* Modal anidado: detalle de personas por jerarquía clickeada. */}
+      <Modal
+        open={jerarquiaSel != null}
+        onClose={() => setJerarquiaSel(null)}
+        title={`Jerarquía · ${jerarquiaSel ?? ""}`}
+        subtitle={`${empleadosFiltrados.length} persona${empleadosFiltrados.length === 1 ? "" : "s"} ocupando este nivel`}
+        size="xl"
+      >
+        <EmpleadosPorJerarquiaTable empleados={empleadosFiltrados} />
       </Modal>
     </>
   );

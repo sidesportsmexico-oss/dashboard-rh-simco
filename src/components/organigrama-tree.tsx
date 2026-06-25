@@ -105,11 +105,18 @@ function OrgNodeItem({
   );
 }
 
-/** Card de resumen por nivel jerárquico para el modal de Posiciones. */
+/**
+ * Card de resumen por nivel jerárquico para el modal de Posiciones.
+ * Si recibe `onSelect`, cada card se vuelve clickeable y dispara el
+ * callback con el nombre de la jerarquía — el padre lo usa para abrir
+ * un modal anidado con la tabla de personas de ese nivel.
+ */
 export function JerarquiasResumen({
   jerarquias,
+  onSelect,
 }: {
   jerarquias: { nombre: string; orden: string; cantidad_puestos: number }[];
+  onSelect?: (jerarquia: string) => void;
 }) {
   const ordered = [...jerarquias].sort(
     (a, b) => Number(a.orden) - Number(b.orden),
@@ -119,11 +126,9 @@ export function JerarquiasResumen({
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
       {ordered.map((j) => {
         const pct = total > 0 ? (j.cantidad_puestos / total) * 100 : 0;
-        return (
-          <div
-            key={j.nombre}
-            className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)]/40 p-3"
-          >
+        const disabled = j.cantidad_puestos === 0 || !onSelect;
+        const inner = (
+          <>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] truncate">
                 {j.nombre}
@@ -138,9 +143,86 @@ export function JerarquiasResumen({
                 style={{ width: `${pct}%` }}
               />
             </div>
-          </div>
+            {!disabled && (
+              <p className="mt-2 text-[10px] text-[var(--color-text-dim)] group-hover:text-[var(--color-accent-teal)] transition-colors">
+                Ver personas →
+              </p>
+            )}
+          </>
+        );
+        if (disabled) {
+          return (
+            <div
+              key={j.nombre}
+              className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)]/40 p-3 opacity-60"
+            >
+              {inner}
+            </div>
+          );
+        }
+        return (
+          <button
+            key={j.nombre}
+            type="button"
+            onClick={() => onSelect?.(j.nombre)}
+            className="group text-left rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)]/40 p-3 cursor-pointer hover:border-[var(--color-accent-teal)]/40 hover:bg-[var(--color-bg-elevated)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-teal)]"
+          >
+            {inner}
+          </button>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Tabla compacta de empleados — usada dentro del modal anidado por jerarquía.
+ */
+export function EmpleadosPorJerarquiaTable({
+  empleados,
+}: {
+  empleados: { nombre: string; puesto: string; area: string; departamento: string }[];
+}) {
+  if (empleados.length === 0) {
+    return (
+      <p className="text-sm text-[var(--color-text-dim)] py-4">
+        Sin empleados registrados en esta jerarquía.
+      </p>
+    );
+  }
+  return (
+    <div className="overflow-x-auto -mx-6">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-dim)] border-b border-[var(--color-border)]">
+            <th className="px-6 py-3 font-medium">Nombre</th>
+            <th className="px-6 py-3 font-medium">Puesto</th>
+            <th className="px-6 py-3 font-medium">Departamento</th>
+            <th className="px-6 py-3 font-medium">Área</th>
+          </tr>
+        </thead>
+        <tbody>
+          {empleados.map((e, i) => (
+            <tr
+              key={`${e.nombre}-${i}`}
+              className="border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-bg-elevated)]/50 transition-colors"
+            >
+              <td className="px-6 py-2.5 font-medium text-[var(--color-text)]">
+                {e.nombre}
+              </td>
+              <td className="px-6 py-2.5 text-[var(--color-text-muted)]">
+                {e.puesto || "—"}
+              </td>
+              <td className="px-6 py-2.5 text-[var(--color-text-muted)] text-xs">
+                {e.departamento || "—"}
+              </td>
+              <td className="px-6 py-2.5 text-[var(--color-text-muted)] text-xs">
+                {e.area || "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

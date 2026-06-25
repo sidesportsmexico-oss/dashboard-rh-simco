@@ -91,3 +91,33 @@ export function jerarquiasOcupadasDesdeHeadcount(
   }
   return out;
 }
+
+/**
+ * Shape mínimo que necesita el modal de detalle por jerarquía.
+ * Evita serializar al cliente los ~40 campos que tiene cada row de Potentor
+ * (RFC, CURP, dirección, IMSS, etc.) — info sensible y no la usamos.
+ */
+export interface EmpleadoSlim {
+  nombre: string;
+  puesto: string;
+  jerarquia: string;
+  area: string;
+  departamento: string;
+}
+
+export function headcountASlim(rows: HeadcountRow[]): EmpleadoSlim[] {
+  return rows.map((r) => {
+    const x = r as Record<string, unknown>;
+    const nombre = [r.NOMB, r.APAT, r.AMAT]
+      .map((s) => (s ?? "").toString().trim())
+      .filter(Boolean)
+      .join(" ");
+    return {
+      nombre: nombre || "—",
+      puesto: String(x.puesto ?? "").trim(),
+      jerarquia: String(x.jerarquia ?? "").trim(),
+      area: String(x.area ?? "").trim(),
+      departamento: String(x.departamento ?? "").trim(),
+    };
+  });
+}
