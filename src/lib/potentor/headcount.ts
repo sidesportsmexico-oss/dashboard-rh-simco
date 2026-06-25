@@ -1,5 +1,20 @@
 import { potentorFetch, POTENTOR_DEFAULTS } from "./client";
 import type { HeadcountField, HeadcountRow } from "./types";
+import { overrideJerarquia } from "./jerarquia-overrides";
+
+/**
+ * Lee la jerarquía de un row de headcount aplicando overrides manuales.
+ * Override se aplica por nombre completo (NOMB + APAT + AMAT).
+ */
+function jerarquiaConOverride(r: HeadcountRow): string {
+  const nombre = [r.NOMB, r.APAT, r.AMAT]
+    .map((s) => (s ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" ");
+  const ov = overrideJerarquia(nombre);
+  if (ov) return ov;
+  return String((r as Record<string, unknown>).jerarquia ?? "").trim();
+}
 
 /**
  * Catálogo de campos disponibles para el reporte headcount.
@@ -83,9 +98,7 @@ export function jerarquiasOcupadasDesdeHeadcount(
 ): Map<string, number> {
   const out = new Map<string, number>();
   for (const r of rows) {
-    const j = String((r as Record<string, unknown>).jerarquia ?? "")
-      .trim()
-      .toUpperCase();
+    const j = jerarquiaConOverride(r).toUpperCase();
     if (!j) continue;
     out.set(j, (out.get(j) ?? 0) + 1);
   }
@@ -115,7 +128,7 @@ export function headcountASlim(rows: HeadcountRow[]): EmpleadoSlim[] {
     return {
       nombre: nombre || "—",
       puesto: String(x.puesto ?? "").trim(),
-      jerarquia: String(x.jerarquia ?? "").trim(),
+      jerarquia: jerarquiaConOverride(r),
       area: String(x.area ?? "").trim(),
       departamento: String(x.departamento ?? "").trim(),
     };
