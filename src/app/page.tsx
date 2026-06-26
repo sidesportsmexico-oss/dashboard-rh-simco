@@ -5,11 +5,8 @@ import { KpiCardClickable } from "@/components/kpi-card-clickable";
 import { SectionCard } from "@/components/section-card";
 import { ErrorBanner } from "@/components/error-banner";
 import { PageHeader } from "@/components/page-header";
-import {
-  JerarquiasResumen,
-  VacantesTableModal,
-} from "@/components/organigrama-tree";
-import { OrgChart } from "@/components/org-chart";
+import { VacantesTableModal } from "@/components/organigrama-tree";
+import { OrganigramaModalBody } from "@/components/organigrama-modal-body";
 import {
   getVacantes,
   resumenVacantes,
@@ -20,6 +17,8 @@ import {
 import {
   getHeadcountReporte,
   resumenHeadcount,
+  jerarquiasOcupadasDesdeHeadcount,
+  headcountASlim,
 } from "@/lib/potentor/headcount";
 import { getEmpresaInfo } from "@/lib/potentor/empresa";
 import { ecoReporte202606Simco } from "@/data/eco-2026-06-simco";
@@ -60,6 +59,16 @@ async function OverviewContent() {
 
   const vacResumen = resumenVacantes(vacantes);
   const hcResumen = resumenHeadcount(headcount);
+
+  // Jerarquías con conteo REAL (no slots de estructura) + empleados slim
+  // para el modal anidado por jerarquía.
+  const jerarquiasOcupadas = jerarquiasOcupadasDesdeHeadcount(headcount);
+  const jerarquiasReales = jerarquias.map((j) => ({
+    ...j,
+    cantidad_puestos:
+      jerarquiasOcupadas.get(j.nombre.trim().toUpperCase()) ?? 0,
+  }));
+  const empleadosSlim = headcountASlim(headcount);
   // Pipeline mensual de vacantes 2026 (Ene-Dic) por estatus
   const pipelineMensual2026 = buildPipelineMensual(vacantes, 2026);
 
@@ -134,19 +143,11 @@ async function OverviewContent() {
           modalSubtitle={`Posiciones por nivel jerárquico · ${hcResumen.total} empleados en plantilla`}
           modalSize="full"
         >
-          <JerarquiasResumen jerarquias={jerarquias} />
-          <div className="border-t border-[var(--color-border-subtle)] pt-6">
-            <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1 flex items-baseline justify-between">
-              <span>Estructura organizacional</span>
-              <span className="text-xs font-normal text-[var(--color-text-dim)]">
-                Click en cualquier card con chevron para expandir reportes
-              </span>
-            </h3>
-            <p className="text-xs text-[var(--color-text-dim)] mb-5">
-              CEO destacado en teal · vacantes en naranja punteado
-            </p>
-            <OrgChart nodos={organigrama} defaultExpandDepth={2} />
-          </div>
+          <OrganigramaModalBody
+            jerarquias={jerarquiasReales}
+            organigrama={organigrama}
+            empleados={empleadosSlim}
+          />
         </KpiCardClickable>
 
         <KpiCardClickable
