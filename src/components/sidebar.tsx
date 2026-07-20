@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   Target,
+  Mail,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const NAV: NavItem[] = [
   { href: "/headcount", label: "Head Count", icon: Users },
   { href: "/eco", label: "ECO", icon: ClipboardList },
   { href: "/evaluacion-360", label: "Evaluación 360", icon: Target },
+  { href: "/comunicados", label: "Comunicados", icon: Mail },
 ];
 
 export function Sidebar({ logo }: { logo: React.ReactNode }) {
