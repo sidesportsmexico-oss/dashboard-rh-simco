@@ -220,10 +220,10 @@ export function TemplateCumpleanos({ nombre, puesto, fechaCumple, fotoUrl }: Pro
         </div>
         <div style={{ position: "relative", width: 220, height: 70 }}>
           <Image
-            src="/comunicados/logo-batbox.png"
+            src="/comunicados/logo-batbox-blanco.png"
             alt="Batbox"
             fill
-            style={{ objectFit: "contain", filter: "invert(1)" }}
+            style={{ objectFit: "contain" }}
             unoptimized
           />
         </div>

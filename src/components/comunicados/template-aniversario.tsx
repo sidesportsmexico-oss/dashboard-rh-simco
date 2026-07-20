@@ -68,13 +68,14 @@ export function TemplateAniversario({
       >
         <div style={{ position: "relative", width: 220, height: 70 }}>
           <Image
-            src="/comunicados/logo-batbox.png"
+            src={
+              variante === "dark"
+                ? "/comunicados/logo-batbox-blanco.png"
+                : "/comunicados/logo-batbox-negro.png"
+            }
             alt="Batbox"
             fill
-            style={{
-              objectFit: "contain",
-              filter: variante === "dark" ? "invert(1)" : "",
-            }}
+            style={{ objectFit: "contain" }}
             unoptimized
             priority
           />
