@@ -8,6 +8,9 @@
  *   - Cumpleaños  → filtrar personas con fecha_nacimiento no vacía
  *   - Aniversario → filtrar personas con fecha_ingreso no vacía
  *
+ * El puesto que aparece en el comunicado viene de la columna "Puesto"
+ * del sheet — aplica tanto para cumpleaños como para aniversario.
+ *
  * Ordenado alfabéticamente A-Z (ignorando acentos).
  * Sync manual — regenerar cuando RH avise que hubo alta/baja.
  */
@@ -16,6 +19,7 @@ export interface PersonaComunicado {
   /** Slug estable para usar como key/query. */
   id: string;
   nombre: string;
+  /** Puesto tal cual viene del sheet (columna "Puesto"). */
   puesto: string;
   /** "Batbox" | "Mulligans" | "MulliBox" | otro (vacío si no aplica). */
   division: string;
