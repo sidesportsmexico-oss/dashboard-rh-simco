@@ -103,12 +103,30 @@ export function ComunicadosClient({ personas }: Props) {
 
   async function handleCopyHtml() {
     try {
-      await navigator.clipboard.writeText(html);
+      // Copiamos con MIME type text/html + text/plain fallback. Gmail
+      // renderiza el text/html al pegar, en vez de mostrar el código.
+      const htmlBlob = new Blob([html], { type: "text/html" });
+      const textBlob = new Blob([html], { type: "text/plain" });
+      const item = new ClipboardItem({
+        "text/html": htmlBlob,
+        "text/plain": textBlob,
+      });
+      await navigator.clipboard.write([item]);
       setCopiedHtml(true);
       setTimeout(() => setCopiedHtml(false), 2500);
     } catch (err) {
-      console.error("Clipboard error:", err);
-      alert("No se pudo copiar. Ábrelo en una pestaña y copia manual.");
+      console.error("Clipboard error (rich):", err);
+      // Fallback: solo texto. Peor UX pero al menos algo funciona.
+      try {
+        await navigator.clipboard.writeText(html);
+        setCopiedHtml(true);
+        setTimeout(() => setCopiedHtml(false), 2500);
+        alert(
+          "Se copió como texto (tu navegador no soporta copiar HTML enriquecido). Prueba en Chrome/Edge.",
+        );
+      } catch {
+        alert("No se pudo copiar. Selecciona el preview y usa Cmd/Ctrl+C.");
+      }
     }
   }
 
