@@ -26,7 +26,7 @@ export interface PersonaComunicado {
   fecha_nacimiento: string;
 }
 
-export const personasComunicados: PersonaComunicado[] = [
+export const personasAniversarios: PersonaComunicado[] = [
   {
     id: "aldo-sanchez-contreras",
     nombre: "Aldo Sanchez Contreras",
