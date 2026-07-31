@@ -1,57 +1,34 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { toPng } from "html-to-image";
 import { Cake, Sparkles, Download, Copy, Upload, X, Check } from "lucide-react";
-import { TemplateCumpleanos } from "./template-cumpleanos";
-import { TemplateAniversario } from "./template-aniversario";
+import { buildHtmlCumpleanos } from "@/lib/comunicados/html-cumpleanos";
+import { buildHtmlAniversario } from "@/lib/comunicados/html-aniversario";
 import type { PersonaComunicado } from "@/data/comunicados-personas";
 
 type Tipo = "cumpleanos" | "aniversario";
-type VarianteAniv = "dark" | "light";
 
 const MESES_ES = [
-  "ENERO",
-  "FEBRERO",
-  "MARZO",
-  "ABRIL",
-  "MAYO",
-  "JUNIO",
-  "JULIO",
-  "AGOSTO",
-  "SEPTIEMBRE",
-  "OCTUBRE",
-  "NOVIEMBRE",
-  "DICIEMBRE",
+  "ENE", "FEB", "MAR", "ABR", "MAY", "JUN",
+  "JUL", "AGO", "SEP", "OCT", "NOV", "DIC",
 ];
 
 const NUMEROS_ORDINALES: Record<number, string> = {
-  1: "Primer",
-  2: "Segundo",
-  3: "Tercer",
-  4: "Cuarto",
-  5: "Quinto",
-  6: "Sexto",
-  7: "Séptimo",
-  8: "Octavo",
-  9: "Noveno",
-  10: "Décimo",
-  11: "Décimo Primer",
-  12: "Décimo Segundo",
-  13: "Décimo Tercer",
-  14: "Décimo Cuarto",
-  15: "Décimo Quinto",
-  20: "Vigésimo",
+  1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto", 5: "Quinto",
+  6: "Sexto", 7: "Séptimo", 8: "Octavo", 9: "Noveno", 10: "Décimo",
+  11: "Décimo Primer", 12: "Décimo Segundo", 13: "Décimo Tercer",
+  14: "Décimo Cuarto", 15: "Décimo Quinto", 20: "Vigésimo",
 };
 
-function formatFechaCumple(iso: string): string {
-  if (!iso) return "";
+function parseFecha(iso: string): { dia: string; mes: string } | null {
+  if (!iso) return null;
   const [_y, mm, dd] = iso.split("-");
   const mesIdx = Number(mm) - 1;
-  return `${dd} DE ${MESES_ES[mesIdx] ?? ""}`;
+  if (!dd || Number.isNaN(mesIdx) || mesIdx < 0 || mesIdx > 11) return null;
+  return { dia: dd.padStart(2, "0"), mes: MESES_ES[mesIdx] };
 }
 
-/** Años cumplidos desde fecha_ingreso a hoy. Devuelve null si sin fecha. */
 function calcAnios(iso: string): number | null {
   if (!iso) return null;
   const start = new Date(iso);
@@ -72,11 +49,11 @@ interface Props {
 
 export function ComunicadosClient({ personas }: Props) {
   const [tipo, setTipo] = useState<Tipo>("cumpleanos");
-  const [variante, setVariante] = useState<VarianteAniv>("dark");
   const [personaId, setPersonaId] = useState<string>(personas[0]?.id ?? "");
-  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [fotoDataUri, setFotoDataUri] = useState<string | null>(null);
   const [aniosOverride, setAniosOverride] = useState<string>("");
   const [copiedHtml, setCopiedHtml] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const previewRef = useRef<HTMLDivElement | null>(null);
   const inputFileRef = useRef<HTMLInputElement | null>(null);
@@ -90,26 +67,58 @@ export function ComunicadosClient({ personas }: Props) {
   const aniosEfectivo = aniosOverride
     ? Math.max(0, Number(aniosOverride))
     : aniosAutomaticos;
-  const aniversarioTexto =
-    aniosEfectivo != null ? `${ordinalTexto(aniosEfectivo)}` : "Primer";
+  const aniversarioTextoStr =
+    aniosEfectivo != null ? ordinalTexto(aniosEfectivo) : "Primer";
 
-  const fechaCumpleFmt = persona ? formatFechaCumple(persona.fecha_nacimiento) : "";
+  const fechaCumple = persona ? parseFecha(persona.fecha_nacimiento) : null;
+
+  // Genera el HTML según el tipo. Este mismo HTML es lo que se copia
+  // y lo que se muestra en el preview via dangerouslySetInnerHTML.
+  const html = useMemo(() => {
+    if (!persona) return "";
+    if (tipo === "cumpleanos") {
+      return buildHtmlCumpleanos({
+        nombre: persona.nombre,
+        puesto: persona.puesto,
+        dia: fechaCumple?.dia ?? "—",
+        mes: fechaCumple?.mes ?? "—",
+        fotoDataUri,
+      });
+    }
+    return buildHtmlAniversario({
+      nombre: persona.nombre,
+      puesto: persona.puesto,
+      ordinalTexto: aniversarioTextoStr,
+      fotoDataUri,
+    });
+  }, [persona, tipo, fechaCumple, fotoDataUri, aniversarioTextoStr]);
 
   function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setFotoUrl(reader.result as string);
+    reader.onload = () => setFotoDataUri(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  async function handleCopyHtml() {
+    try {
+      await navigator.clipboard.writeText(html);
+      setCopiedHtml(true);
+      setTimeout(() => setCopiedHtml(false), 2500);
+    } catch (err) {
+      console.error("Clipboard error:", err);
+      alert("No se pudo copiar. Ábrelo en una pestaña y copia manual.");
+    }
   }
 
   async function handleDownloadPng() {
     if (!previewRef.current) return;
+    setDownloading(true);
     try {
       const dataUrl = await toPng(previewRef.current, {
         pixelRatio: 2,
         cacheBust: true,
-        backgroundColor: variante === "dark" && tipo === "aniversario" ? "#000" : "#fff",
       });
       const link = document.createElement("a");
       const slug = persona?.id ?? "comunicado";
@@ -117,32 +126,17 @@ export function ComunicadosClient({ personas }: Props) {
       link.href = dataUrl;
       link.click();
     } catch (err) {
-      console.error("Error generando PNG:", err);
-      alert("No se pudo generar el PNG. Ver consola.");
-    }
-  }
-
-  async function handleCopyHtml() {
-    if (!previewRef.current) return;
-    // Serializamos el nodo con estilos inline resueltos por el navegador.
-    // Para email lo empaquetamos con las dimensiones fijas.
-    const html = previewRef.current.outerHTML;
-    const wrapped = `<div style="max-width:1080px;margin:0 auto;">${html}</div>`;
-    try {
-      await navigator.clipboard.writeText(wrapped);
-      setCopiedHtml(true);
-      setTimeout(() => setCopiedHtml(false), 2000);
-    } catch (err) {
-      console.error("Clipboard error:", err);
-      alert("No se pudo copiar. Usa el botón de PNG.");
+      console.error("Error PNG:", err);
+      alert("No se pudo generar PNG. Usa Copiar HTML.");
+    } finally {
+      setDownloading(false);
     }
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6">
       {/* PANEL IZQ: FORMULARIO */}
       <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] p-6 space-y-6 h-fit lg:sticky lg:top-6">
-        {/* Selector tipo */}
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-muted)] mb-3">
             Tipo de comunicado
@@ -173,38 +167,6 @@ export function ComunicadosClient({ personas }: Props) {
           </div>
         </div>
 
-        {/* Selector variante (solo aniversario) */}
-        {tipo === "aniversario" && (
-          <div>
-            <label className="block text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-muted)] mb-3">
-              Variante
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: "dark" as const, label: "Fondo negro" },
-                { id: "light" as const, label: "Fondo blanco" },
-              ].map((v) => {
-                const active = variante === v.id;
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setVariante(v.id)}
-                    className={
-                      active
-                        ? "rounded-lg px-3 py-2 text-xs font-medium border bg-[var(--color-accent-teal)]/15 border-[var(--color-accent-teal)]/40 text-[var(--color-accent-teal)] cursor-pointer transition-all"
-                        : "rounded-lg px-3 py-2 text-xs font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)] cursor-pointer transition-all"
-                    }
-                  >
-                    {v.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Persona */}
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-muted)] mb-3">
             Persona
@@ -229,7 +191,6 @@ export function ComunicadosClient({ personas }: Props) {
           )}
         </div>
 
-        {/* Años (solo aniversario, con override) */}
         {tipo === "aniversario" && (
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-muted)] mb-3">
@@ -250,15 +211,14 @@ export function ComunicadosClient({ personas }: Props) {
               className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] px-3 py-2.5 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-teal)]"
             />
             <p className="text-[10px] text-[var(--color-text-dim)] mt-2">
-              Muestra: <b>{aniversarioTexto}</b> aniversario
+              Muestra: <b>{aniversarioTextoStr}</b> Aniversario
             </p>
           </div>
         )}
 
-        {/* Foto */}
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-muted)] mb-3">
-            Foto del festejado
+            Foto del festejado (302×453 aprox)
           </label>
           <input
             ref={inputFileRef}
@@ -273,12 +233,12 @@ export function ComunicadosClient({ personas }: Props) {
             className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-border-subtle)] px-3 py-4 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)] cursor-pointer transition-all"
           >
             <Upload className="h-4 w-4" />
-            {fotoUrl ? "Cambiar foto" : "Subir foto (JPG / PNG)"}
+            {fotoDataUri ? "Cambiar foto" : "Subir foto (JPG / PNG)"}
           </button>
-          {fotoUrl && (
+          {fotoDataUri && (
             <button
               type="button"
-              onClick={() => setFotoUrl(null)}
+              onClick={() => setFotoDataUri(null)}
               className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-xs text-[var(--color-accent-red)] hover:bg-[var(--color-accent-red)]/10 cursor-pointer transition-all"
             >
               <X className="h-3.5 w-3.5" />
@@ -286,41 +246,46 @@ export function ComunicadosClient({ personas }: Props) {
             </button>
           )}
           <p className="text-[10px] text-[var(--color-text-dim)] mt-2">
-            La foto se convierte a B&N automáticamente en el diseño final.
+            La foto se embebe en el HTML como data URI. Recomendado &lt; 200 KB.
           </p>
         </div>
 
-        {/* Acciones */}
         <div className="border-t border-[var(--color-border-subtle)] pt-5 space-y-2">
           <button
             type="button"
-            onClick={handleDownloadPng}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-teal)] px-4 py-3 text-sm font-semibold text-black hover:bg-[var(--color-accent-teal)]/90 cursor-pointer transition-all"
-          >
-            <Download className="h-4 w-4" />
-            Descargar PNG
-          </button>
-          <button
-            type="button"
             onClick={handleCopyHtml}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-subtle)] px-4 py-2.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)] cursor-pointer transition-all"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-accent-teal)] px-4 py-3 text-sm font-semibold text-black hover:bg-[var(--color-accent-teal)]/90 cursor-pointer transition-all"
           >
             {copiedHtml ? (
               <>
-                <Check className="h-4 w-4 text-[var(--color-accent-teal)]" />
-                Copiado
+                <Check className="h-4 w-4" />
+                ¡Copiado! Pega en Gmail
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4" />
-                Copiar HTML
+                Copiar HTML para Gmail
               </>
             )}
           </button>
-          <p className="text-[10px] text-[var(--color-text-dim)]">
-            Recomendado: usar PNG en el correo. El HTML sirve si tu cliente de
-            correo lo soporta bien.
-          </p>
+          <button
+            type="button"
+            onClick={handleDownloadPng}
+            disabled={downloading}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-subtle)] px-4 py-2.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-wait"
+          >
+            <Download className="h-4 w-4" />
+            {downloading ? "Generando…" : "Descargar como PNG (opcional)"}
+          </button>
+          <div className="text-[10px] text-[var(--color-text-dim)] leading-relaxed space-y-1 pt-1">
+            <p><b>Cómo pegar en Gmail:</b></p>
+            <ol className="list-decimal ml-4 space-y-0.5">
+              <li>Click en &quot;Copiar HTML&quot;</li>
+              <li>Abre Gmail y redacta un nuevo correo</li>
+              <li>Pega con <b>Cmd/Ctrl+V</b> en el cuerpo</li>
+              <li>Envía</li>
+            </ol>
+          </div>
         </div>
       </div>
 
@@ -331,48 +296,14 @@ export function ComunicadosClient({ personas }: Props) {
             Preview
           </h3>
           <span className="text-[10px] text-[var(--color-text-dim)]">
-            1080 × 1080 · escala 50% para visualizar
+            Vista Gmail · 600px width · fondo gris igual que el correo real
           </span>
         </div>
         <div
-          style={{
-            width: 540,
-            height: 540,
-            overflow: "hidden",
-            border: "1px solid var(--color-border-subtle)",
-            borderRadius: 12,
-            margin: "0 auto",
-          }}
-        >
-          <div
-            style={{
-              transform: "scale(0.5)",
-              transformOrigin: "top left",
-              width: 1080,
-              height: 1080,
-            }}
-          >
-            <div ref={previewRef}>
-              {persona &&
-                (tipo === "cumpleanos" ? (
-                  <TemplateCumpleanos
-                    nombre={persona.nombre}
-                    puesto={persona.puesto}
-                    fechaCumple={fechaCumpleFmt}
-                    fotoUrl={fotoUrl}
-                  />
-                ) : (
-                  <TemplateAniversario
-                    nombre={persona.nombre}
-                    puesto={persona.puesto}
-                    aniversarioTexto={aniversarioTexto}
-                    fotoUrl={fotoUrl}
-                    variante={variante}
-                  />
-                ))}
-            </div>
-          </div>
-        </div>
+          ref={previewRef}
+          dangerouslySetInnerHTML={{ __html: html }}
+          style={{ minHeight: 800 }}
+        />
       </div>
     </div>
   );
