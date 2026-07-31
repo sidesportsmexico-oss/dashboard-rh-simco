@@ -1,7 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { ComunicadosClient } from "@/components/comunicados/comunicados-client";
-import { personasAniversarios } from "@/data/comunicados-personas-aniversarios";
-import { personasCumpleanos } from "@/data/comunicados-personas-cumpleanos";
+import { personasComunicados } from "@/data/comunicados-personas";
 
 export default function Page() {
   return (
@@ -12,10 +11,7 @@ export default function Page() {
         tags={["RH", "Marketing interno"]}
       />
 
-      <ComunicadosClient
-        personasCumpleanos={personasCumpleanos}
-        personasAniversarios={personasAniversarios}
-      />
+      <ComunicadosClient personas={personasComunicados} />
     </div>
   );
 }

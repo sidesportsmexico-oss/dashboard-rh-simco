@@ -5,7 +5,7 @@ import { toPng } from "html-to-image";
 import { Cake, Sparkles, Download, Copy, Upload, X, Check } from "lucide-react";
 import { buildHtmlCumpleanos } from "@/lib/comunicados/html-cumpleanos";
 import { buildHtmlAniversario } from "@/lib/comunicados/html-aniversario";
-import type { PersonaComunicado } from "@/data/comunicados-personas-aniversarios";
+import type { PersonaComunicado } from "@/data/comunicados-personas";
 
 type Tipo = "cumpleanos" | "aniversario";
 
@@ -44,18 +44,12 @@ function ordinalTexto(n: number): string {
 }
 
 interface Props {
-  personasCumpleanos: PersonaComunicado[];
-  personasAniversarios: PersonaComunicado[];
+  /** Listado maestro. Ya viene ordenado A-Z desde el archivo de data. */
+  personas: PersonaComunicado[];
 }
 
-export function ComunicadosClient({
-  personasCumpleanos,
-  personasAniversarios,
-}: Props) {
+export function ComunicadosClient({ personas }: Props) {
   const [tipo, setTipo] = useState<Tipo>("cumpleanos");
-  const [personaId, setPersonaId] = useState<string>(
-    personasCumpleanos[0]?.id ?? "",
-  );
   const [fotoDataUri, setFotoDataUri] = useState<string | null>(null);
   const [aniosOverride, setAniosOverride] = useState<string>("");
   const [copiedHtml, setCopiedHtml] = useState(false);
@@ -64,23 +58,36 @@ export function ComunicadosClient({
   const previewRef = useRef<HTMLDivElement | null>(null);
   const inputFileRef = useRef<HTMLInputElement | null>(null);
 
-  // Cada tipo tiene su propia lista de personas.
-  // Cumpleaños: sheet específico con 49 personas.
-  // Aniversario: sheet original con 29 personas (tienen fecha_ingreso).
-  const personas =
-    tipo === "cumpleanos" ? personasCumpleanos : personasAniversarios;
+  // Filtrado según tipo:
+  //  - Cumpleaños  → solo personas con fecha_nacimiento
+  //  - Aniversario → solo personas con fecha_ingreso
+  const personasFiltradas = useMemo(
+    () =>
+      personas.filter((p) =>
+        tipo === "cumpleanos"
+          ? Boolean(p.fecha_nacimiento)
+          : Boolean(p.fecha_ingreso),
+      ),
+    [personas, tipo],
+  );
 
-  // Al cambiar de tipo, si la persona seleccionada ya no existe en la nueva
-  // lista, brincamos automáticamente a la primera.
+  const [personaId, setPersonaId] = useState<string>(
+    personasFiltradas[0]?.id ?? "",
+  );
+
+  // Al cambiar de tipo, si la persona seleccionada ya no está en el
+  // subset filtrado, brincamos automáticamente a la primera.
   useEffect(() => {
-    if (!personas.find((p) => p.id === personaId)) {
-      setPersonaId(personas[0]?.id ?? "");
+    if (!personasFiltradas.find((p) => p.id === personaId)) {
+      setPersonaId(personasFiltradas[0]?.id ?? "");
     }
-  }, [tipo, personas, personaId]);
+  }, [tipo, personasFiltradas, personaId]);
 
   const persona = useMemo(
-    () => personas.find((p) => p.id === personaId) ?? personas[0],
-    [personas, personaId],
+    () =>
+      personasFiltradas.find((p) => p.id === personaId) ??
+      personasFiltradas[0],
+    [personasFiltradas, personaId],
   );
 
   const aniosAutomaticos = persona ? calcAnios(persona.fecha_ingreso) : null;
@@ -214,7 +221,7 @@ export function ComunicadosClient({
             onChange={(e) => setPersonaId(e.target.value)}
             className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] px-3 py-2.5 text-sm text-[var(--color-text)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-teal)]"
           >
-            {personas.map((p) => {
+            {personasFiltradas.map((p) => {
               // División o departamento como contexto (cumpleaños no trae división)
               const contexto = p.division || p.departamento || "";
               return (
