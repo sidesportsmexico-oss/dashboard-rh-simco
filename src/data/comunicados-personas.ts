@@ -1,8 +1,11 @@
 /**
  * Listado maestro de personas para el módulo /comunicados.
  *
- * Fuente: Google Sheet compartido por RH el 2026-07-31
- * (https://docs.google.com/spreadsheets/d/1oL4YaYZkFrhrdM0nQA-II-urB41zha7xOUgXfDwHw4Y).
+ * Fuente: Google Sheet · hoja CORPO (última sync: 2026-08-28)
+ * https://docs.google.com/spreadsheets/d/1oL4YaYZkFrhrdM0nQA-II-urB41zha7xOUgXfDwHw4Y/edit
+ *
+ * El sheet tiene 2 hojas: CORPO (corporativo, se usa aquí) y CRD
+ * (concepts/restaurantes, pendiente de integrar).
  *
  * Uso por tipo de comunicado:
  *   - Cumpleaños  → filtrar personas con fecha_nacimiento no vacía
@@ -67,15 +70,6 @@ export const personasComunicados: PersonaComunicado[] = [
     departamento: "Recursos Humanos",
     fecha_ingreso: "2026-05-18",
     fecha_nacimiento: "2004-08-04",
-  },
-  {
-    id: "angela-fabiola-sandoval-ramos",
-    nombre: "Angela Fabiola Sandoval Ramos",
-    puesto: "Project Design",
-    division: "",
-    departamento: "Diseño & Arquitectura",
-    fecha_ingreso: "2026-02-23",
-    fecha_nacimiento: "2001-05-20",
   },
   {
     id: "brando-esau-nieves-nieves",
@@ -254,7 +248,7 @@ export const personasComunicados: PersonaComunicado[] = [
     puesto: "Contador Corporativo",
     division: "",
     departamento: "Administración",
-    fecha_ingreso: "2026-06-23",
+    fecha_ingreso: "2026-07-23",
     fecha_nacimiento: "1996-09-07",
   },
   {
@@ -436,15 +430,6 @@ export const personasComunicados: PersonaComunicado[] = [
     departamento: "Operaciones",
     fecha_ingreso: "2026-06-03",
     fecha_nacimiento: "2002-09-01",
-  },
-  {
-    id: "ximena-palacios-mora",
-    nombre: "Ximena Palacios Mora",
-    puesto: "Outbound Marketing",
-    division: "",
-    departamento: "Marketing",
-    fecha_ingreso: "2026-06-01",
-    fecha_nacimiento: "2005-12-26",
   },
   {
     id: "yahir-alessandro-bolanos-ramos",
