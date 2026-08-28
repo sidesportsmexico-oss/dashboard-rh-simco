@@ -14,6 +14,9 @@
  * El puesto que aparece en el comunicado viene de la columna "Puesto"
  * del sheet — aplica tanto para cumpleaños como para aniversario.
  *
+ * Parser de fechas soporta datetime, y strings tipo "27/jul/2023",
+ * "03-sep-94" o "12-sep-1993" (año 2 o 4 dígitos, separador / o -).
+ *
  * Ordenado alfabéticamente A-Z (ignorando acentos).
  * Sync manual — regenerar cuando RH avise que hubo alta/baja.
  */
@@ -105,7 +108,7 @@ export const personasComunicados: PersonaComunicado[] = [
     division: "",
     departamento: "Administración",
     fecha_ingreso: "2023-07-27",
-    fecha_nacimiento: "",
+    fecha_nacimiento: "1993-09-12",
   },
   {
     id: "cynthia-lilian-gonzalez-marroquin",
@@ -114,7 +117,7 @@ export const personasComunicados: PersonaComunicado[] = [
     division: "",
     departamento: "Comercial",
     fecha_ingreso: "2022-12-12",
-    fecha_nacimiento: "",
+    fecha_nacimiento: "1994-09-03",
   },
   {
     id: "diana-paulina-vazquez-cardona",
@@ -231,7 +234,7 @@ export const personasComunicados: PersonaComunicado[] = [
     division: "",
     departamento: "Operaciones",
     fecha_ingreso: "2023-07-10",
-    fecha_nacimiento: "",
+    fecha_nacimiento: "2001-09-07",
   },
   {
     id: "jose-daniel-vargas-elizondo",
